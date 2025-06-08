@@ -8,13 +8,17 @@ add_library(RendererModule SHARED
         context/rendering_device.cpp
 
         implementation/volk_implementation.cpp
+        utilities/device.h
 )
 
-target_link_libraries(RendererModule PUBLIC
-    Vulkan::Vulkan
-    SDL3::SDL3
-    vk-bootstrap::vk-bootstrap
-    volk::volk
+target_link_libraries(RendererModule
+        PUBLIC
+        Vulkan::Vulkan
+        SDL3::SDL3
+        vk-bootstrap::vk-bootstrap
+        volk::volk
+        PRIVATE
+        UtilitiesModule
 )
 
 target_include_directories(RendererModule PUBLIC

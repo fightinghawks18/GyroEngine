@@ -7,3 +7,7 @@ add_library(PlatformModule SHARED
 target_link_libraries(PlatformModule PUBLIC
     SDL3::SDL3
 )
+
+target_include_directories(PlatformModule PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
