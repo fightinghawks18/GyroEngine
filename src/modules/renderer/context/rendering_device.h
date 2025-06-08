@@ -4,10 +4,13 @@
 
 #pragma once
 
-#include <SDL3/SDL.h>
-#include <VkBootstrap.h>
+#include <map>
+
+#include "tasks/maid.h"
+#include "debug/printer.h"
 
 #include "implementation/volk_implementation.h"
+#include "utilities/device.h"
 
 enum class DeviceQueueType
 {
@@ -85,6 +88,8 @@ public:
     bool init();
     void cleanup();
 
+    DeviceQueue getPresentQueue(VkSurfaceKHR surface);
+
     [[nodiscard]] VkInstance getInstance() const {
         return m_instance;
     }
@@ -101,8 +106,40 @@ public:
         return m_deviceFamilies;
     }
 private:
+    // Device objects
+
     VkInstance m_instance = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_logicalDevice = VK_NULL_HANDLE;
     DeviceFamilies m_deviceFamilies;
+    Maid m_maid;
+
+    // Setup configuration
+
+    bool m_requiresTesselation = false;
+    bool m_acceptDiscrete = true;
+    bool m_acceptIntegrated = true;
+    bool m_acceptCPU = true;
+
+    // Device setup/cleanup
+
+    bool createInstance();
+    bool setupDebugMessenger();
+    bool selectPhysicalDevice();
+    bool createLogicalDevice();
+    bool createDeviceFamilies();
+
+    void destroyLogicalDevice();
+    void destroyPhysicalDevice();
+    void destroyDebugMessenger();
+    void destroyInstance();
+
+    // Device static helpers
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugMessengerCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData);
 };
