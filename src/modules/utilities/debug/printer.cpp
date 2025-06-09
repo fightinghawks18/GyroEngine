@@ -21,5 +21,5 @@ void Printer::error(const std::string& message)
 
 void Printer::out(PrintType printType, const std::string& message)
 {
-    std::cout << message;
+    std::cout << message << std::endl;
 }

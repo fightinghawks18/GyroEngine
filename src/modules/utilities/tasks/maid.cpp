@@ -11,14 +11,13 @@ Maid::~Maid()
 
 void Maid::add(const std::function<void()>& task)
 {
-    m_tasks.push_back(task);
+    m_tasks.push(task);
 }
 
 void Maid::cleanup()
 {
-    for (const auto& task : m_tasks)
-    {
-        task();
+    while (!m_tasks.empty()) {
+        m_tasks.top()();
+        m_tasks.pop();
     }
-    m_tasks.clear();
 }
