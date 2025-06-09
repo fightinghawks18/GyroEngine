@@ -1,4 +1,4 @@
-add_library(UtilitiesModule SHARED
+add_library(UtilitiesModule STATIC
         tasks/maid.cpp
 
         debug/printer.cpp

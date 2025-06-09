@@ -1,7 +1,7 @@
 find_package(SDL3 CONFIG REQUIRED)
 
-add_library(PlatformModule SHARED
-    window.cpp
+add_library(PlatformModule STATIC
+        window.cpp
 )
 
 target_link_libraries(PlatformModule PUBLIC

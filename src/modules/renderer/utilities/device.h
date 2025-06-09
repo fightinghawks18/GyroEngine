@@ -19,7 +19,7 @@ namespace rendererutils
             return extensions;
         }
 
-        const char* const* data() const
+        [[nodiscard]] const char* const* data() const
         {
             return extensions.data();
         }
@@ -44,9 +44,9 @@ namespace rendererutils
 
         exts.extensionCount = extensionCount;
         exts.extensions.reserve(extensionCount);
-        for (auto extensions : sdlExtensions)
+        for (uint32_t i = 0; i < extensionCount; ++i)
         {
-            exts.extensions.push_back(extensions);
+            exts.extensions.push_back(sdlExtensions[i]);
         }
         return exts;
     }

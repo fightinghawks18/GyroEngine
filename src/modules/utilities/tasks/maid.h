@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <vector>
 #include <functional>
+#include <stack>
 
 /// @brief Garbage collector
 class Maid {
@@ -16,5 +16,5 @@ public:
     void add(const std::function<void()>& task);
     void cleanup();
 private:
-    std::vector<std::function<void()>> m_tasks;
+    std::stack<std::function<void()>> m_tasks;
 };
