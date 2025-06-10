@@ -40,13 +40,13 @@ public:
     bool init() override { return true; };
     void cleanup() override;
 
-    void makeColor(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
-    void makeDepth(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
-    void makeStencil(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
-    void makePresent(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
-    void makeTransferSrc(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
-    void makeTransferDst(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
-    void moveToLayout(VkImageLayout newLayout, rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void makeColor(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void makeDepth(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void makeStencil(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void makePresent(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void makeTransferSrc(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void makeTransferDst(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
     void copyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
 
     [[nodiscard]] VkImage getImage() const {

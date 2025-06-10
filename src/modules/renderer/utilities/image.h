@@ -6,7 +6,7 @@
 
 #include <volk.h>
 
-namespace rendererutils
+namespace imageutils
 {
     static uint32_t getSourceAccessMask(VkImageLayout src)
     {

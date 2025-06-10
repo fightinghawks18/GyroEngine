@@ -18,7 +18,7 @@
 struct DeviceQueue
 {
     uint32_t family = 0;
-    rendererutils::QueueType type = rendererutils::QueueType::None;
+    deviceutils::QueueType type = deviceutils::QueueType::None;
     VkQueue queue = VK_NULL_HANDLE;
 
     [[nodiscard]] bool isValid() const {
@@ -41,7 +41,7 @@ struct DeviceFamilies
         return true;
     }
 
-    [[nodiscard]] DeviceQueue getQueue(const rendererutils::QueueType type) const
+    [[nodiscard]] DeviceQueue getQueue(const deviceutils::QueueType type) const
     {
         for (const auto& queue : queues) {
             if (queue.type == type) {
@@ -53,22 +53,22 @@ struct DeviceFamilies
 
     [[nodiscard]] DeviceQueue getGraphicsQueue() const
     {
-        return getQueue(rendererutils::QueueType::Graphics);
+        return getQueue(deviceutils::QueueType::Graphics);
     }
 
     [[nodiscard]] DeviceQueue getComputeQueue() const
     {
-        return getQueue(rendererutils::QueueType::Compute);
+        return getQueue(deviceutils::QueueType::Compute);
     }
 
     [[nodiscard]] DeviceQueue getTransferQueue() const
     {
-        return getQueue(rendererutils::QueueType::Transfer);
+        return getQueue(deviceutils::QueueType::Transfer);
     }
 
     [[nodiscard]] DeviceQueue getPresentQueue() const
     {
-        return getQueue(rendererutils::QueueType::Present);
+        return getQueue(deviceutils::QueueType::Present);
     }
 };
 

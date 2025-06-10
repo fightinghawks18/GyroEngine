@@ -107,40 +107,40 @@ void Image::cleanup()
     destroyImageView();
 }
 
-void Image::makeColor(const rendererutils::QueueType dstQueue)
+void Image::makeColor(const deviceutils::QueueType dstQueue)
 {
     moveToLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makeDepth(const rendererutils::QueueType dstQueue)
+void Image::makeDepth(const deviceutils::QueueType dstQueue)
 {
     moveToLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makeStencil(const rendererutils::QueueType dstQueue)
+void Image::makeStencil(const deviceutils::QueueType dstQueue)
 {
     moveToLayout(VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makePresent(const rendererutils::QueueType dstQueue)
+void Image::makePresent(const deviceutils::QueueType dstQueue)
 {
     moveToLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, dstQueue);
 }
 
-void Image::makeTransferSrc(const rendererutils::QueueType dstQueue)
+void Image::makeTransferSrc(const deviceutils::QueueType dstQueue)
 {
     moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstQueue);
 }
 
-void Image::makeTransferDst(const rendererutils::QueueType dstQueue)
+void Image::makeTransferDst(const deviceutils::QueueType dstQueue)
 {
     moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstQueue);
 }
 
-void Image::moveToLayout(VkImageLayout newLayout, rendererutils::QueueType dstQueue)
+void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue)
 {
     uint32_t dstQueueIndex = 0;
-    if (dstQueue == rendererutils::QueueType::None)
+    if (dstQueue == deviceutils::QueueType::None)
     {
         dstQueueIndex = VK_QUEUE_FAMILY_IGNORED;
     } else
@@ -174,8 +174,8 @@ void Image::moveToLayout(VkImageLayout newLayout, rendererutils::QueueType dstQu
             barrier.subresourceRange.baseArrayLayer = 0;
             barrier.subresourceRange.layerCount = m_arrayLayers;
 
-            VkPipelineStageFlags srcStageMask = rendererutils::getSourceStageFlags(m_imageLayout);
-            VkPipelineStageFlags dstStageMask = rendererutils::getDestinationStageFlags(newLayout);
+            VkPipelineStageFlags srcStageMask = imageutils::getSourceStageFlags(m_imageLayout);
+            VkPipelineStageFlags dstStageMask = imageutils::getDestinationStageFlags(newLayout);
 
             vkCmdPipelineBarrier(
                 commandBuffer,

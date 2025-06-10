@@ -89,7 +89,7 @@ DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface) const
         if (presentSupport)
         {
             DeviceQueue presentQueue;
-            presentQueue.type = rendererutils::QueueType::Present;
+            presentQueue.type = deviceutils::QueueType::Present;
             presentQueue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &presentQueue.queue);
@@ -103,18 +103,8 @@ bool RenderingDevice::createInstance()
 {
     volkInitialize();
 
-    std::vector<const char*> extensions = {};
-    uint32_t extensionCount = 0;
-    char const* const* sdlExtensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
-    if (sdlExtensions)
-    {
-        extensions.reserve(extensionCount);
-        for (uint32_t i = 0; i < extensionCount; ++i)
-        {
-            extensions.push_back(sdlExtensions[i]);
-        }
-    }
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    deviceutils::Extensions extensions = deviceutils::getSDLExtensions();
+    extensions.extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     std::vector<const char*> validationLayers = {};
     validationLayers.push_back("VK_LAYER_KHRONOS_validation");
@@ -132,7 +122,7 @@ bool RenderingDevice::createInstance()
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
-    createInfo.enabledExtensionCount = extensions.size();
+    createInfo.enabledExtensionCount = extensions.extensions.size();
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     createInfo.enabledLayerCount = validationLayers.size();
@@ -340,8 +330,8 @@ bool RenderingDevice::createLogicalDevice()
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    rendererutils::Extensions deviceExtensions;
-    deviceExtensions = rendererutils::createExtensions({
+    deviceutils::Extensions deviceExtensions;
+    deviceExtensions = deviceutils::createExtensions({
         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
         VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
@@ -371,7 +361,7 @@ bool RenderingDevice::createLogicalDevice()
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.enabledExtensionCount = deviceExtensions.extensionCount;
+    createInfo.enabledExtensionCount = deviceExtensions.extensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
     createInfo.pNext = &synchronization2Features;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -405,7 +395,7 @@ bool RenderingDevice::createDeviceFamilies()
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !m_deviceFamilies.getGraphicsQueue().isValid())
         {
             DeviceQueue queue{};
-            queue.type = rendererutils::QueueType::Graphics;
+            queue.type = deviceutils::QueueType::Graphics;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
@@ -417,7 +407,7 @@ bool RenderingDevice::createDeviceFamilies()
         !(queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT))
             {
             DeviceQueue queue{};
-            queue.type = rendererutils::QueueType::Transfer;
+            queue.type = deviceutils::QueueType::Transfer;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
@@ -427,7 +417,7 @@ bool RenderingDevice::createDeviceFamilies()
         if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT && !m_deviceFamilies.getComputeQueue().isValid())
         {
             DeviceQueue queue{};
-            queue.type = rendererutils::QueueType::Compute;
+            queue.type = deviceutils::QueueType::Compute;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);

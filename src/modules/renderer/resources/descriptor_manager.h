@@ -22,6 +22,21 @@ public:
     std::shared_ptr<DescriptorPool> createDescriptorPool();
     std::shared_ptr<DescriptorLayout> createDescriptorLayout();
     std::shared_ptr<DescriptorSet> createDescriptorSet(const std::shared_ptr<DescriptorPool>& pool, const std::shared_ptr<DescriptorLayout>& layout);
+
+    [[nodiscard]] std::vector<std::shared_ptr<DescriptorSet>> getDescriptorSets()
+    {
+        return m_descriptorSets;
+    }
+
+    [[nodiscard]] std::vector<std::shared_ptr<DescriptorPool>> getDescriptorPools()
+    {
+        return m_descriptorPools;
+    }
+
+    [[nodiscard]] std::vector<std::shared_ptr<DescriptorLayout>> getDescriptorLayouts()
+    {
+        return m_descriptorLayouts;
+    }
 private:
     RenderingDevice& m_device;
 

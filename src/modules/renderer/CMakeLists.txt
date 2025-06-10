@@ -1,4 +1,5 @@
 find_package(Vulkan REQUIRED)
+find_package(unofficial-shaderc CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(vk-bootstrap CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
@@ -38,11 +39,18 @@ add_library(RendererModule STATIC
         rendering/render_step.h
         rendering/render_steps/clear_step.cpp
         rendering/render_steps/clear_step.h
+        resources/pipeline.cpp
+        resources/pipeline.h
+        utilities/pipeline.h
+        resources/shader.cpp
+        resources/shader.h
+        utilities/shader.h
 )
 
 target_link_libraries(RendererModule
         PUBLIC
         Vulkan::Vulkan
+        unofficial::shaderc::shaderc
         SDL3::SDL3
         vk-bootstrap::vk-bootstrap
         volk::volk
