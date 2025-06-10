@@ -9,6 +9,15 @@
 
 namespace rendererutils
 {
+    enum class QueueType
+    {
+        None,
+        Graphics,
+        Compute,
+        Transfer,
+        Present
+    };
+
     struct Extensions
     {
         uint32_t extensionCount = 0;

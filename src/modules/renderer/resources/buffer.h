@@ -6,23 +6,23 @@
 
 #include <volk.h>
 
+#include "device_resource.h"
 #include "implementation/vma_implementation.h"
 
 class RenderingDevice;
 
-class Buffer {
+class Buffer : public IDeviceResource {
 public:
-    explicit Buffer(RenderingDevice& device)
-        : m_device(device) {}
-    ~Buffer() = default;
+    explicit Buffer(RenderingDevice& device): IDeviceResource(device) {}
+    ~Buffer() override = default;
 
     Buffer& setSize(VkDeviceSize size);
     Buffer& setUsage(VkBufferUsageFlags usage);
     Buffer& setMemoryUsage(VmaMemoryUsage memoryUsage);
     Buffer& setSharingMode(VkSharingMode sharingMode);
 
-    bool init();
-    void cleanup();
+    bool init() override;
+    void cleanup() override;
 
     void map(const void* data);
 
@@ -34,8 +34,6 @@ public:
         return m_size;
     }
 private:
-    RenderingDevice& m_device;
-
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VmaAllocation m_allocation = VK_NULL_HANDLE;
     VkDeviceSize m_size = 0;

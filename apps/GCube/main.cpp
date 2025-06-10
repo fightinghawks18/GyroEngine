@@ -9,6 +9,7 @@
 #include "window.h"
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
+#include "rendering/render_steps/clear_step.h"
 
 int main()
 {
@@ -38,6 +39,9 @@ int main()
             return -1;
         }
 
+        auto clearPass = std::make_shared<ClearStep>();
+
+
         Viewport viewport{0};
         viewport.width = 0.5f;
         viewport.height = 0.5f;
@@ -51,6 +55,7 @@ int main()
                 if (commandBuffer != VK_NULL_HANDLE)
                 {
                     renderer->setViewport(viewport);
+                    renderer->getPipeline().addStep(clearPass);
                     renderer->renderFrame();
                     renderer->endFrame();
                 } else

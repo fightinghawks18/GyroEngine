@@ -1,0 +1,31 @@
+//
+// Created by lepag on 6/10/2025.
+//
+
+#pragma once
+
+#include <memory>
+#include <vector>
+#include <volk.h>
+
+#include "descriptor_layout.h"
+#include "descriptor_pool.h"
+#include "descriptor_set.h"
+
+class DescriptorManager {
+public:
+    explicit DescriptorManager(RenderingDevice& device);
+    ~DescriptorManager();
+
+    void cleanup();
+
+    std::shared_ptr<DescriptorPool> createDescriptorPool();
+    std::shared_ptr<DescriptorLayout> createDescriptorLayout();
+    std::shared_ptr<DescriptorSet> createDescriptorSet(const std::shared_ptr<DescriptorPool>& pool, const std::shared_ptr<DescriptorLayout>& layout);
+private:
+    RenderingDevice& m_device;
+
+    std::vector<std::shared_ptr<DescriptorPool>> m_descriptorPools;
+    std::vector<std::shared_ptr<DescriptorSet>> m_descriptorSets;
+    std::vector<std::shared_ptr<DescriptorLayout>> m_descriptorLayouts;
+};

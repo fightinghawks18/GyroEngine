@@ -6,17 +6,20 @@
 
 #include <string>
 #include <volk.h>
+
+#include "device_resource.h"
 #include "../implementation/vma_implementation.h"
+#include "utilities/device.h"
 
 #include "utilities/image.h"
 #include "utilities/renderer.h"
 
 class RenderingDevice;
 
-class Image {
+class Image : public IDeviceResource {
 public:
-    explicit Image(RenderingDevice& image) : m_device(image) {}
-    ~Image() = default;
+    explicit Image(RenderingDevice& device) : IDeviceResource(device) {}
+    ~Image() override = default;
 
     //static Image fromFile(RenderingDevice& device, const std::string& filePath);
 
@@ -34,15 +37,16 @@ public:
     Image& setInitialLayout(VkImageLayout initialLayout);
 
     bool init(VkImage externalImage = VK_NULL_HANDLE, VkImageView imageView = VK_NULL_HANDLE);
-    void cleanup();
+    bool init() override { return true; };
+    void cleanup() override;
 
-    void makeColor();
-    void makeDepth();
-    void makeStencil();
-    void makePresent();
-    void makeTransferSrc();
-    void makeTransferDst();
-    void moveToLayout(VkImageLayout newLayout);
+    void makeColor(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void makeDepth(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void makeStencil(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void makePresent(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void makeTransferSrc(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void makeTransferDst(rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
+    void moveToLayout(VkImageLayout newLayout, rendererutils::QueueType dstQueue = rendererutils::QueueType::None);
     void copyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
 
     [[nodiscard]] VkImage getImage() const {
@@ -57,12 +61,12 @@ public:
         return m_imageLayout;
     }
 private:
-    RenderingDevice& m_device;
-
     VkImage m_image = VK_NULL_HANDLE;
     VkImageView m_imageView = VK_NULL_HANDLE;
     VkImageLayout m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     VmaAllocation m_allocation = VK_NULL_HANDLE;
+
+    uint32_t m_srcFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
     VkFormat m_format = VK_FORMAT_UNDEFINED;
     VkExtent3D m_extent = {};

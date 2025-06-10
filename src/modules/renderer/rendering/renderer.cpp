@@ -75,26 +75,7 @@ void Renderer::setViewport(Viewport viewport)
 
 void Renderer::renderFrame()
 {
-    // Do a simple clear pass
-    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
-
-    VkRenderingAttachmentInfoKHR colorAttachment{};
-    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    colorAttachment.imageView = m_swapchainImages[m_currentImageIndex]->getImageView();
-    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.clearValue.color = { 1.0f, 0.0f, 1.0f, 1.0f };
-
-    VkRenderingInfoKHR renderingInfo{};
-    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-    renderingInfo.renderArea = { { 0, 0 }, m_swapchainExtent };
-    renderingInfo.layerCount = 1;
-    renderingInfo.colorAttachmentCount = 1;
-    renderingInfo.pColorAttachments = &colorAttachment;
-
-    vkCmdBeginRenderingKHR(commandBuffer, &renderingInfo);
-    vkCmdEndRenderingKHR(commandBuffer);
+    m_renderPipeline.execute();
 }
 
 void Renderer::endFrame()

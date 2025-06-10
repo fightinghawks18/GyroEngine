@@ -6,6 +6,7 @@
 
 #include <volk.h>
 
+#include "render_pipeline.h"
 #include "../utilities/renderer.h"
 #include "viewport.h"
 #include "../../platform/window.h"
@@ -13,9 +14,25 @@
 
 class RenderingDevice;
 
+struct FrameContext
+{
+    VkCommandBuffer cmd;
+
+    uint32_t imageIndex;
+    uint32_t frameIndex;
+
+    Image* swapchainImage;
+    VkExtent2D swapchainExtent;
+
+    Viewport viewport;
+};
+
 class Renderer {
 public:
-    explicit Renderer(RenderingDevice& device) : m_device(device) {}
+    explicit Renderer(RenderingDevice& device) : m_device(device), m_renderPipeline(*this)
+    {
+    }
+
     ~Renderer();
 
     bool init(Window* window);
@@ -28,9 +45,27 @@ public:
     void setViewport(Viewport viewport);
     void renderFrame();
     void endFrame();
+
+    [[nodiscard]] RenderPipeline& getPipeline()
+    {
+        return m_renderPipeline;
+    }
+
+    [[nodiscard]] FrameContext& getFrameContext()
+    {
+        m_frameContext.cmd = m_commandBuffers[m_currentFrame];
+        m_frameContext.imageIndex = m_currentImageIndex;
+        m_frameContext.frameIndex = m_currentFrame;
+        m_frameContext.swapchainImage = m_swapchainImages[m_currentImageIndex];
+        m_frameContext.viewport = m_viewport;
+        m_frameContext.swapchainExtent = m_swapchainExtent;
+        return m_frameContext;
+    }
 private:
     RenderingDevice& m_device;
     Window* m_window = nullptr;
+
+    RenderPipeline m_renderPipeline;
 
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkQueue m_presentQueue = VK_NULL_HANDLE;
@@ -50,6 +85,8 @@ private:
     uint32_t m_currentFrame = 0;
     uint32_t m_currentImageIndex = 0;
     bool m_needsRecreation = false;
+
+    FrameContext m_frameContext = {};
 
     VkCommandBuffer startRecord();
     void presentRender();

@@ -74,7 +74,7 @@ VkSurfaceKHR RenderingDevice::createSurface(const Window *window) const
     return surface;
 }
 
-DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface)
+DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface) const
 {
     uint32_t familyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &familyCount, nullptr);
@@ -89,7 +89,7 @@ DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface)
         if (presentSupport)
         {
             DeviceQueue presentQueue;
-            presentQueue.type = DeviceQueueType::Present;
+            presentQueue.type = rendererutils::QueueType::Present;
             presentQueue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &presentQueue.queue);
@@ -405,7 +405,7 @@ bool RenderingDevice::createDeviceFamilies()
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !m_deviceFamilies.getGraphicsQueue().isValid())
         {
             DeviceQueue queue{};
-            queue.type = DeviceQueueType::Graphics;
+            queue.type = rendererutils::QueueType::Graphics;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
@@ -417,7 +417,7 @@ bool RenderingDevice::createDeviceFamilies()
         !(queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT))
             {
             DeviceQueue queue{};
-            queue.type = DeviceQueueType::Transfer;
+            queue.type = rendererutils::QueueType::Transfer;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
@@ -427,7 +427,7 @@ bool RenderingDevice::createDeviceFamilies()
         if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT && !m_deviceFamilies.getComputeQueue().isValid())
         {
             DeviceQueue queue{};
-            queue.type = DeviceQueueType::Compute;
+            queue.type = rendererutils::QueueType::Compute;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);

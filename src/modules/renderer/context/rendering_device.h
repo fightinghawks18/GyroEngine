@@ -14,20 +14,11 @@
 #include "implementation/vma_implementation.h"
 #include "utilities/device.h"
 
-enum class DeviceQueueType
-{
-    None,
-    Graphics,
-    Compute,
-    Transfer,
-    Present
-};
-
 /// @brief GPU queue that is used for submitting rendering commands.
 struct DeviceQueue
 {
     uint32_t family = 0;
-    DeviceQueueType type = DeviceQueueType::None;
+    rendererutils::QueueType type = rendererutils::QueueType::None;
     VkQueue queue = VK_NULL_HANDLE;
 
     [[nodiscard]] bool isValid() const {
@@ -50,7 +41,7 @@ struct DeviceFamilies
         return true;
     }
 
-    [[nodiscard]] DeviceQueue getQueue(const DeviceQueueType type) const
+    [[nodiscard]] DeviceQueue getQueue(const rendererutils::QueueType type) const
     {
         for (const auto& queue : queues) {
             if (queue.type == type) {
@@ -62,22 +53,22 @@ struct DeviceFamilies
 
     [[nodiscard]] DeviceQueue getGraphicsQueue() const
     {
-        return getQueue(DeviceQueueType::Graphics);
+        return getQueue(rendererutils::QueueType::Graphics);
     }
 
     [[nodiscard]] DeviceQueue getComputeQueue() const
     {
-        return getQueue(DeviceQueueType::Compute);
+        return getQueue(rendererutils::QueueType::Compute);
     }
 
     [[nodiscard]] DeviceQueue getTransferQueue() const
     {
-        return getQueue(DeviceQueueType::Transfer);
+        return getQueue(rendererutils::QueueType::Transfer);
     }
 
     [[nodiscard]] DeviceQueue getPresentQueue() const
     {
-        return getQueue(DeviceQueueType::Present);
+        return getQueue(rendererutils::QueueType::Present);
     }
 };
 
@@ -103,7 +94,7 @@ public:
     VkFormat queryStencilFormat(VkFormat format);
 
     VkSurfaceKHR createSurface(const Window* window) const;
-    DeviceQueue getPresentQueue(VkSurfaceKHR surface);
+    DeviceQueue getPresentQueue(VkSurfaceKHR surface) const;
 
     [[nodiscard]] VkInstance getInstance() const {
         return m_instance;
@@ -111,6 +102,20 @@ public:
 
     [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const {
         return m_physicalDevice;
+    }
+
+    [[nodiscard]] VkPhysicalDeviceProperties getPhysicalDeviceProperties() const
+    {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
+        return properties;
+    }
+
+    [[nodiscard]] VkPhysicalDeviceFeatures getPhysicalDeviceFeatures() const
+    {
+        VkPhysicalDeviceFeatures features;
+        vkGetPhysicalDeviceFeatures(m_physicalDevice, &features);
+        return features;
     }
 
     [[nodiscard]] VkDevice getLogicalDevice() const {

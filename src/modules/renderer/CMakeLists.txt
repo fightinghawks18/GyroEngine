@@ -22,6 +22,22 @@ add_library(RendererModule STATIC
         utilities/image.h
         resources/buffer.cpp
         resources/buffer.h
+        resources/device_resource.h
+        resources/sampler.cpp
+        resources/sampler.h
+        resources/descriptor_manager.cpp
+        resources/descriptor_manager.h
+        resources/descriptor_set.cpp
+        resources/descriptor_set.h
+        resources/descriptor_pool.cpp
+        resources/descriptor_pool.h
+        resources/descriptor_layout.cpp
+        resources/descriptor_layout.h
+        rendering/render_pipeline.cpp
+        rendering/render_pipeline.h
+        rendering/render_step.h
+        rendering/render_steps/clear_step.cpp
+        rendering/render_steps/clear_step.h
 )
 
 target_link_libraries(RendererModule

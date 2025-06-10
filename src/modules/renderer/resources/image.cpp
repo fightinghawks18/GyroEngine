@@ -107,38 +107,54 @@ void Image::cleanup()
     destroyImageView();
 }
 
-void Image::makeColor()
+void Image::makeColor(const rendererutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    moveToLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makeDepth()
+void Image::makeDepth(const rendererutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    moveToLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makeStencil()
+void Image::makeStencil(const rendererutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL);
+    moveToLayout(VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makePresent()
+void Image::makePresent(const rendererutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    moveToLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, dstQueue);
 }
 
-void Image::makeTransferSrc()
+void Image::makeTransferSrc(const rendererutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstQueue);
 }
 
-void Image::makeTransferDst()
+void Image::makeTransferDst(const rendererutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstQueue);
 }
 
-void Image::moveToLayout(VkImageLayout newLayout)
+void Image::moveToLayout(VkImageLayout newLayout, rendererutils::QueueType dstQueue)
 {
+    uint32_t dstQueueIndex = 0;
+    if (dstQueue == rendererutils::QueueType::None)
+    {
+        dstQueueIndex = VK_QUEUE_FAMILY_IGNORED;
+    } else
+    {
+        DeviceQueue queue = m_device.getDeviceFamilies().getQueue(dstQueue);
+        if (queue.isValid())
+        {
+            dstQueueIndex = queue.family;
+        } else
+        {
+            dstQueueIndex = VK_QUEUE_FAMILY_IGNORED;
+        }
+    }
+
     rendererutils::submitOneTimeCommand(
         m_device.getLogicalDevice(),
         m_device.getCommandPool(),
@@ -150,8 +166,8 @@ void Image::moveToLayout(VkImageLayout newLayout)
             barrier.image = m_image;
             barrier.oldLayout = m_imageLayout;
             barrier.newLayout = newLayout;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL_KHR;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL_KHR;
+            barrier.srcQueueFamilyIndex = m_srcFamilyIndex;
+            barrier.dstQueueFamilyIndex = dstQueueIndex;
             barrier.subresourceRange.aspectMask = m_aspectMask;
             barrier.subresourceRange.baseMipLevel = 0;
             barrier.subresourceRange.levelCount = m_mipLevels;
