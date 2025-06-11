@@ -5,6 +5,7 @@
 #include "descriptor_set.h"
 
 #include "context/rendering_device.h"
+#include "rendering/renderer.h"
 
 DescriptorSet& DescriptorSet::setLayout(VkDescriptorSetLayout layout)
 {
@@ -33,6 +34,15 @@ void DescriptorSet::cleanup()
     {
         vkFreeDescriptorSets(m_device.getLogicalDevice(), m_descriptorPool, 1, &m_descriptorSet);
         m_descriptorSet = VK_NULL_HANDLE;
+    }
+}
+
+void DescriptorSet::bind(const FrameContext& frameContext, VkPipelineLayout layout)
+{
+    if (m_descriptorSet != VK_NULL_HANDLE)
+    {
+        vkCmdBindDescriptorSets(frameContext.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout,
+                        0, 1, &m_descriptorSet, 0, nullptr);
     }
 }
 

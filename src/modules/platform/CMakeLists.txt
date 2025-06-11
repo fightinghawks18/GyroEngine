@@ -4,6 +4,11 @@ add_library(PlatformModule STATIC
         window.cpp
 )
 
+set_target_properties(PlatformModule
+        PROPERTIES
+        OUTPUT_NAME "platform"
+)
+
 target_link_libraries(PlatformModule PUBLIC
     SDL3::SDL3
 )

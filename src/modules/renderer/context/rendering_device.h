@@ -72,6 +72,16 @@ struct DeviceFamilies
     }
 };
 
+enum class PreferredColorFormatType
+{
+    sRGB,
+    uNORM,
+    HDR,
+    LINEAR,
+    COMPATIBLE,
+    DEFAULT
+};
+
 /// @brief Encapsulates management of rendering objects and rendering operations.
 class RenderingDevice {
 public:
@@ -88,6 +98,9 @@ public:
     void waitIdle() const {
         vkDeviceWaitIdle(m_logicalDevice);
     }
+
+    void setColorPreference(PreferredColorFormatType preferredColorFormat);
+    void setSwapchainColorFormat(VkFormat swapchainColorFormat);
 
     VkFormat queryColorFormat(VkFormat format);
     VkFormat queryDepthFormat(VkFormat format);
@@ -131,6 +144,26 @@ public:
         return m_commandPool;
     }
 
+    [[nodiscard]] VkFormat getSwapchainFormat() const
+    {
+        return m_swapchainColorFormat;
+    }
+
+    [[nodiscard]] VkFormat getPreferredColorFormat() const
+    {
+        return m_colorFormat;
+    }
+
+    [[nodiscard]] VkFormat getPreferredDepthFormat() const
+    {
+        return m_depthFormat;
+    }
+
+    [[nodiscard]] VkFormat getPreferredStencilFormat() const
+    {
+        return m_stencilFormat;
+    }
+
     [[nodiscard]] const std::vector<VkFormat>& getSupportedColorFormats() const {
         return m_supportedColorFormats;
     }
@@ -171,6 +204,11 @@ private:
     std::vector<VkFormat> m_supportedStencilFormats;
 
     uint32_t m_maxFramesInFlight = 2;
+    PreferredColorFormatType m_preferredColorType = PreferredColorFormatType::sRGB;
+    VkFormat m_colorFormat = VK_FORMAT_UNDEFINED;
+    VkFormat m_swapchainColorFormat = VK_FORMAT_UNDEFINED;
+    VkFormat m_depthFormat = VK_FORMAT_UNDEFINED;
+    VkFormat m_stencilFormat = VK_FORMAT_UNDEFINED;
 
     // Setup configuration
 
@@ -198,6 +236,12 @@ private:
     void destroyPhysicalDevice();
     void destroyDebugMessenger();
     void destroyInstance();
+
+    // Device format helpers
+
+    bool findPreferredColorFormat();
+    bool findBestDepthFormat();
+    bool findBestStencilFormat();
 
     // Device static helpers
 

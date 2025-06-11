@@ -18,5 +18,8 @@
   }, {
     "name" : "shaderc",
     "version>=" : "2023.8"
+  }, {
+    "name" : "glm",
+    "version>=" : "1.0.1#3"
   } ]
 }

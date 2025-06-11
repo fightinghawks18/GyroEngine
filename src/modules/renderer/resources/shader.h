@@ -18,6 +18,11 @@ public:
 
     bool init() override;
     void cleanup() override;
+
+    [[nodiscard]] VkShaderModule getShaderModule() const
+    {
+        return m_shaderModule;
+    }
 private:
     VkShaderModule m_shaderModule = VK_NULL_HANDLE;
     std::string m_shaderPath;

@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 #include <string>
 #include <volk.h>
@@ -29,15 +32,61 @@ namespace shaderutils
         return buffer;
     }
 
+    inline std::string readShaderSource(const std::string& filePath) {
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to open shader file: " + filePath);
+        }
+
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
+
+        return buffer.str();
+    }
+
     inline std::vector<uint32_t> compileShader(const std::string& source, shaderc_shader_kind kind) {
+        if (!std::filesystem::exists(source))
+        {
+            throw std::runtime_error("Failed to open shader file: " + source);
+        }
+
+        std::string shaderSource = readShaderSource(source);
+
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
-        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, "shader");
+        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shaderSource, kind, "shader");
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
             throw std::runtime_error("Shader compilation failed: " + result.GetErrorMessage());
         }
 
         return {result.cbegin(), result.cend()};
+    }
+
+    inline void compileShaderToFile(const std::string& sourcePath, shaderc_shader_kind kind) {
+        if (!std::filesystem::exists(sourcePath)) {
+            throw std::runtime_error("Shader file does not exist: " + sourcePath);
+        }
+
+        std::string shaderSource = readShaderSource(sourcePath);
+
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
+
+        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shaderSource, kind, "shader");
+        if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+            throw std::runtime_error("Shader compilation failed: " + result.GetErrorMessage());
+        }
+
+        std::string outputPath = sourcePath + ".spv";
+        std::ofstream outFile(outputPath, std::ios::binary);
+        if (!outFile.is_open()) {
+            throw std::runtime_error("Failed to create output file: " + outputPath);
+        }
+
+        outFile.write(reinterpret_cast<const char*>(result.cbegin()),
+                      (result.cend() - result.cbegin()) * sizeof(uint32_t));
+        outFile.close();
     }
 }

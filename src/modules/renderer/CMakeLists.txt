@@ -45,6 +45,13 @@ add_library(RendererModule STATIC
         resources/shader.cpp
         resources/shader.h
         utilities/shader.h
+        rendering/render_steps/scene_step.cpp
+        rendering/render_steps/scene_step.h
+)
+
+set_target_properties(RendererModule
+        PROPERTIES
+        OUTPUT_NAME "renderer"
 )
 
 target_link_libraries(RendererModule

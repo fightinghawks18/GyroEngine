@@ -51,6 +51,11 @@ public:
         return m_renderPipeline;
     }
 
+    [[nodiscard]] VkFormat getSwapchainColorFormat() const
+    {
+        return m_swapchainImageFormat;
+    }
+
     [[nodiscard]] FrameContext& getFrameContext()
     {
         m_frameContext.cmd = m_commandBuffers[m_currentFrame];

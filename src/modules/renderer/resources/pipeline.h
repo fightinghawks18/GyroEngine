@@ -14,13 +14,16 @@
 class Pipeline : IDeviceResource {
 public:
     explicit Pipeline(RenderingDevice& device): IDeviceResource(device) {}
-    ~Pipeline() override {}
+    ~Pipeline() override = default;
 
     Pipeline& setDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
     Pipeline& clearConfig();
+    Pipeline& setColorFormat(VkFormat colorFormat);
 
     bool init() override;
     void cleanup() override;
+
+    void bind(const FrameContext& frameContext);
 
     [[nodiscard]] pipelineutils::PipelineConfig& getPipelineConfig()
     {
@@ -31,7 +34,7 @@ private:
     VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
     std::shared_ptr<DescriptorManager> m_descriptorManager;
 
-    pipelineutils::PipelineConfig m_pipelineConfig;
+    pipelineutils::PipelineConfig m_pipelineConfig{};
 
     bool buildPipelineLayout();
     bool buildPipeline();

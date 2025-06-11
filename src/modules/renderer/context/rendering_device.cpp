@@ -25,6 +25,9 @@ bool RenderingDevice::init()
     if (!querySupportedColorFormats()) return false;
     if (!querySupportedDepthFormats()) return false;
     if (!querySupportedStencilFormats()) return false;
+    if (!findPreferredColorFormat()) return false;
+    if (!findBestDepthFormat()) return false;
+    if (!findBestStencilFormat()) return false;
     return true;
 }
 
@@ -33,6 +36,24 @@ void RenderingDevice::cleanup()
     waitIdle();
     m_maid.cleanup();
     volkFinalize();
+}
+
+void RenderingDevice::setColorPreference(PreferredColorFormatType preferredColorFormat)
+{
+    PreferredColorFormatType oldPreferredColor = m_preferredColorType;
+    VkFormat oldFormat = m_colorFormat;
+    m_preferredColorType = preferredColorFormat;
+    if (!findPreferredColorFormat())
+    {
+        Printer::warn("Fallback override, reusing previous format");
+        m_colorFormat = oldFormat;
+        m_preferredColorType = oldPreferredColor;
+    }
+}
+
+void RenderingDevice::setSwapchainColorFormat(VkFormat swapchainColorFormat)
+{
+    m_swapchainColorFormat = swapchainColorFormat;
 }
 
 VkFormat RenderingDevice::queryColorFormat(VkFormat format)
@@ -337,12 +358,17 @@ bool RenderingDevice::createLogicalDevice()
         VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
         VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME
     });
+
+    VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT unusedAttachmentFeatures{};
+    unusedAttachmentFeatures.dynamicRenderingUnusedAttachments = VK_TRUE;
 
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
     dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
     dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+    dynamicRenderingFeatures.pNext = &unusedAttachmentFeatures;
 
     VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
     indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
@@ -627,9 +653,89 @@ void RenderingDevice::destroyInstance()
     }
 }
 
+bool RenderingDevice::findPreferredColorFormat()
+{
+    std::string typeString = "none";
+    for (const auto& format : m_supportedColorFormats)
+    {
+        switch (m_preferredColorType)
+        {
+        case PreferredColorFormatType::sRGB:
+            typeString = "sRGB";
+            if (format == VK_FORMAT_R8G8B8A8_SRGB || format == VK_FORMAT_B8G8R8A8_SRGB)
+            {
+                m_colorFormat = format;
+                return true;
+            }
+            break;
+        case PreferredColorFormatType::HDR:
+            typeString = "HDR";
+            if (format == VK_FORMAT_R16G16B16A16_SFLOAT || format == VK_FORMAT_R32G32B32A32_SFLOAT)
+            {
+                m_colorFormat = format;
+                return true;
+            }
+            break;
+        case PreferredColorFormatType::LINEAR:
+            typeString = "linear";
+            if (format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+            {
+                m_colorFormat = format;
+                return true;
+            }
+            break;
+        case PreferredColorFormatType::COMPATIBLE:
+            typeString = "compatible";
+            // Select the first format that is compatible
+            m_colorFormat = format;
+            return true;
+        case PreferredColorFormatType::DEFAULT:
+            typeString = "default";
+            // Fallback to the first supported format
+            m_colorFormat = m_supportedColorFormats.front();
+            return true;
+        default: break;
+        }
+    }
+
+    m_colorFormat = m_supportedColorFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedColorFormats.front();
+    Printer::warn("Attempt to find a suitable color format for type " + typeString + " failed. Using fallback format: " + std::to_string(m_colorFormat));
+    return m_colorFormat != VK_FORMAT_UNDEFINED;
+}
+
+bool RenderingDevice::findBestDepthFormat()
+{
+    // Prioritize commonly used depth formats
+    for (const auto& format : m_supportedDepthFormats) {
+        if (format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D32_SFLOAT_S8_UINT) {
+            m_depthFormat = format;
+            return true;
+        }
+    }
+
+    // Fallback to the first supported format
+    m_depthFormat = m_supportedDepthFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedDepthFormats.front();;
+    return m_depthFormat != VK_FORMAT_UNDEFINED;
+}
+
+bool RenderingDevice::findBestStencilFormat()
+{
+    // Prioritize commonly used stencil formats
+    for (const auto& format : m_supportedStencilFormats) {
+        if (format == VK_FORMAT_S8_UINT) {
+            m_stencilFormat = format;
+            return true;
+        }
+    }
+
+    // Fallback to the first supported format
+    m_stencilFormat = m_supportedStencilFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedStencilFormats.front();
+    return m_stencilFormat != VK_FORMAT_UNDEFINED;
+}
+
 VkBool32 RenderingDevice::debugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-    void *pUserData)
+                                                 VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                                                 void *pUserData)
 {
     Printer::print("[VULKAN]: " + std::string(pCallbackData->pMessage));
     return VK_FALSE;

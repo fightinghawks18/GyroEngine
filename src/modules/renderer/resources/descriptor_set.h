@@ -7,6 +7,8 @@
 #include <volk.h>
 #include "device_resource.h"
 
+struct FrameContext;
+
 class DescriptorSet : public IDeviceResource {
 public:
     explicit DescriptorSet(RenderingDevice& device): IDeviceResource(device) {}
@@ -17,6 +19,8 @@ public:
 
     bool init() override;
     void cleanup() override;
+
+    void bind(const FrameContext& frameContext, VkPipelineLayout layout);
 
     void updateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const;
     void updateImage(uint32_t binding, VkImageView view, VkSampler sampler) const;
