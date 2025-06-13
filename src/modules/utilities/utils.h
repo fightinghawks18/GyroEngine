@@ -19,8 +19,12 @@ namespace utils
     {
 #ifdef __linux__
         char result[PATH_MAX];
-        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-        return std::filesystem::path(result).parent_path().string();
+        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX - 1);
+        if (count != -1) {
+            result[count] = '\0';
+            return std::filesystem::path(result).parent_path().string();
+        }
+        return {};
 #elifdef _WIN32
         char result[MAX_PATH];
         GetModuleFileNameA(nullptr, result, MAX_PATH);

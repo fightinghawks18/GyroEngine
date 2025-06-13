@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <any>
 #include <map>
+#include <memory>
 
 #include "../../platform/window.h"
 #include "tasks/maid.h"
@@ -12,6 +14,7 @@
 
 #include "implementation/volk_implementation.h"
 #include "implementation/vma_implementation.h"
+#include "resources/device_resource.h"
 #include "utilities/device.h"
 
 /// @brief GPU queue that is used for submitting rendering commands.
@@ -104,10 +107,12 @@ public:
 
     VkFormat queryColorFormat(VkFormat format);
     VkFormat queryDepthFormat(VkFormat format);
-    VkFormat queryStencilFormat(VkFormat format);
 
     VkSurfaceKHR createSurface(const Window* window) const;
     DeviceQueue getPresentQueue(VkSurfaceKHR surface) const;
+
+    void manageResource(const std::shared_ptr<IDeviceResource>& resource);
+    void manageNonResource(const std::shared_ptr<void>& resource);
 
     [[nodiscard]] VkInstance getInstance() const {
         return m_instance;
@@ -194,6 +199,9 @@ private:
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
     DeviceFamilies m_deviceFamilies;
     Maid m_maid;
+
+    std::vector<std::shared_ptr<IDeviceResource>> m_resources;
+    std::vector<std::shared_ptr<void>> m_anyResources;
 
     std::vector<VkFormat> m_supportedColorFormats;
     std::vector<VkFormat> m_supportedDepthFormats;

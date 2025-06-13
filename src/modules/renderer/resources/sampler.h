@@ -10,7 +10,7 @@
 class Sampler final : public IDeviceResource {
 public:
     explicit Sampler(RenderingDevice& device): IDeviceResource(device) {}
-    ~Sampler() override = default;
+    ~Sampler() override { Sampler::cleanup(); }
 
     Sampler& setMinFilter(VkFilter minFilter);
     Sampler& setMagFilter(VkFilter magFilter);

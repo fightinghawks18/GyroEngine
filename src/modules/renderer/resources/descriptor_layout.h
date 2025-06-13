@@ -21,7 +21,7 @@ struct LayoutBinding
 class DescriptorLayout : public IDeviceResource {
 public:
     explicit DescriptorLayout(RenderingDevice& device): IDeviceResource(device) {}
-    ~DescriptorLayout() override = default;
+    ~DescriptorLayout() override { DescriptorLayout::cleanup(); }
 
     DescriptorLayout& addBinding(const LayoutBinding binding);
     DescriptorLayout& clearBindings();

@@ -22,7 +22,7 @@ public:
     };
 
     explicit Buffer(RenderingDevice& device): IDeviceResource(device) {}
-    ~Buffer() override = default;
+    ~Buffer() override { Buffer::cleanup(); }
 
     Buffer& setBufferType(const BufferType& bufferType);
     Buffer& setSize(VkDeviceSize size);

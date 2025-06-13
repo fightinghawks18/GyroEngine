@@ -11,10 +11,10 @@
 #include "utilities/pipeline.h"
 
 
-class Pipeline : IDeviceResource {
+class Pipeline : public IDeviceResource {
 public:
     explicit Pipeline(RenderingDevice& device): IDeviceResource(device) {}
-    ~Pipeline() override = default;
+    ~Pipeline() override { Pipeline::cleanup(); }
 
     Pipeline& setDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
     Pipeline& clearConfig();

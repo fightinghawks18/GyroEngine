@@ -17,7 +17,7 @@ struct PoolSize
 class DescriptorPool : public IDeviceResource {
 public:
     explicit DescriptorPool(RenderingDevice& device) : IDeviceResource(device) {}
-    ~DescriptorPool() override = default;
+    ~DescriptorPool() override { DescriptorPool::cleanup(); }
 
     DescriptorPool& setPoolSize(const std::vector<PoolSize>& poolSizes);
     DescriptorPool& addPoolSize(PoolSize poolSize);

@@ -32,6 +32,25 @@ bool RenderingDevice::init()
 void RenderingDevice::cleanup()
 {
     waitIdle();
+
+    for (auto& resource : m_resources)
+    {
+        if (resource)
+        {
+            resource.reset();
+        }
+    }
+    m_resources.clear();
+
+    for (auto& anyResource : m_anyResources)
+    {
+        if (anyResource)
+        {
+            anyResource.reset();
+        }
+    }
+    m_anyResources.clear();
+
     m_maid.cleanup();
     volkFinalize();
 }
@@ -107,6 +126,36 @@ DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface) const
         }
     }
     return {};
+}
+
+void RenderingDevice::manageResource(const std::shared_ptr<IDeviceResource>& resource)
+{
+    if (!resource)
+    {
+        Printer::warn("Attempted to manage a null resource");
+        return;
+    }
+    if (std::find(m_resources.begin(), m_resources.end(), resource) != m_resources.end())
+    {
+        Printer::warn("Resource already managed by the device");
+        return;
+    }
+    m_resources.push_back(resource);
+}
+
+void RenderingDevice::manageNonResource(const std::shared_ptr<void>& resource)
+{
+    if (!resource)
+    {
+        Printer::warn("Attempted to manage a null non-resource");
+        return;
+    }
+    if (std::find(m_anyResources.begin(), m_anyResources.end(), resource) != m_anyResources.end())
+    {
+        Printer::warn("Non-resource already managed by the device");
+        return;
+    }
+    m_anyResources.push_back(resource);
 }
 
 bool RenderingDevice::createInstance()
@@ -489,10 +538,7 @@ bool RenderingDevice::createAllocator()
     }
 
     m_maid.add([&]() {
-        if (m_allocator != VK_NULL_HANDLE) {
-            vmaDestroyAllocator(m_allocator);
-            m_allocator = VK_NULL_HANDLE;
-        }
+        destroyAllocator();
     });
 
     return true;

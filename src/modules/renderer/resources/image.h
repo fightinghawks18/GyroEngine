@@ -19,7 +19,7 @@ class RenderingDevice;
 class Image : public IDeviceResource {
 public:
     explicit Image(RenderingDevice& device) : IDeviceResource(device) {}
-    ~Image() override = default;
+    ~Image() override { Image::cleanup(); }
 
     //static Image fromFile(RenderingDevice& device, const std::string& filePath);
 

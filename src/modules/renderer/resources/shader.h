@@ -12,7 +12,7 @@
 class Shader : public IDeviceResource {
 public:
     explicit Shader(RenderingDevice& device): IDeviceResource(device) {}
-    ~Shader() override = default;
+    ~Shader() override { Shader::cleanup(); }
 
     Shader& setShaderPath(const std::string& path);
 

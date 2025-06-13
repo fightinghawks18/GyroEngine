@@ -12,7 +12,7 @@ struct FrameContext;
 class DescriptorSet : public IDeviceResource {
 public:
     explicit DescriptorSet(RenderingDevice& device): IDeviceResource(device) {}
-    ~DescriptorSet() override = default;
+    ~DescriptorSet() override { DescriptorSet::cleanup(); }
 
     DescriptorSet& setLayout(VkDescriptorSetLayout layout);
     DescriptorSet& setPool(VkDescriptorPool pool);

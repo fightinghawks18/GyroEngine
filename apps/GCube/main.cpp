@@ -40,7 +40,7 @@ int main()
             std::cerr << "Failed to initialize rendering device." << std::endl;
             return -1;
         }
-        auto renderer = std::make_unique<Renderer>(*device);
+        auto renderer = std::make_shared<Renderer>(*device);
         if (!renderer->init(window.get()))
         {
             std::cerr << "Failed to initialize renderer." << std::endl;
@@ -173,6 +173,14 @@ int main()
         scenePass->setVertices(vertices);
         scenePass->setPipeline(pipeline.get());
 
+        // Let device manage these resources
+        device->manageResource(pipeline);
+        device->manageResource(vertexBuffer);
+        device->manageResource(indexBuffer);
+        device->manageResource(vertexShader);
+        device->manageResource(fragmentShader);
+
+
         while (!window->isRequestedQuit())
         {
             window->update();
@@ -191,12 +199,15 @@ int main()
                 {
                     renderer->advanceFrame();
                 }
+            } else
+            {
+                break;
             }
         }
     }
-    renderer->cleanup();
-    device->cleanup();
-    window->destroy();
+    renderer.reset();
+    window.reset();
+    device.reset();
     SDL_Quit();
     return 0;
 }
