@@ -48,13 +48,44 @@ int main()
         }
 
         std::vector<types::Vertex> vertices = {
-            {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, // Bottom vertex (red)
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},  // Right vertex (green)
-            {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}  // Left vertex (blue)
+            { // Bottom right
+                {
+                    0.5f, -0.5f, 0.0f
+                },
+                {
+                    1.0f, 0.0f, 0.0f
+                }
+            },
+            { // Top right
+                {
+                    0.5f, 0.5f, 0.0f
+                },
+                {
+                    0.0f, 1.0f, 0.0f
+                },
+            },
+            { // Top left
+                {
+                    -0.5f, 0.5f, 0.0f
+                },
+                {
+                    0.0f, 0.0f, 1.0f
+                }
+            },
+            { // Bottom left
+                {
+                    -0.5f, -0.5f, 0.0f
+                },
+                {
+                    1.0f, 1.0f, 1.0f
+                }
+            }
+
         };
 
         std::vector<uint32_t> indices = {
-            0, 1, 2 // Triangle
+            0, 1, 2,
+            2, 3, 0
         };
 
     {
