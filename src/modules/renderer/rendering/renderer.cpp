@@ -154,8 +154,8 @@ VkCommandBuffer Renderer::startRecord()
         viewport.maxDepth = m_viewport.depth;
 
         VkRect2D scissor{};
-        scissor.offset = { static_cast<int32_t>(m_viewport.x), static_cast<int32_t>(m_viewport.y) };
-        scissor.extent = { static_cast<uint32_t>(m_viewport.width), static_cast<uint32_t>(m_viewport.height) };
+        scissor.offset = { static_cast<int32_t>(viewport.x), static_cast<int32_t>(viewport.y) };
+        scissor.extent = { static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height) };
 
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);

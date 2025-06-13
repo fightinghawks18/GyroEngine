@@ -62,8 +62,8 @@ int main()
         auto scenePass = std::make_shared<SceneStep>();
 
         Viewport viewport{0};
-        viewport.width = 0.5f;
-        viewport.height = 0.5f;
+        viewport.width = 1.f;
+        viewport.height = 1.f;
 
 
         auto pipeline = std::make_shared<Pipeline>(*device);
@@ -84,6 +84,9 @@ int main()
                    .setMemoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
                    .setSharingMode(VK_SHARING_MODE_EXCLUSIVE)
                    .init();
+
+        vertexBuffer->map(vertices.data());
+        indexBuffer->map(indices.data());
 
         auto vertexShader = std::make_shared<Shader>(*device);
         auto fragmentShader = std::make_shared<Shader>(*device);
@@ -124,6 +127,9 @@ int main()
             1,
             offsetof(types::Vertex, color),
             VK_FORMAT_R32G32B32_SFLOAT);
+
+        pipelineConfig.rasterizerState.cullMode = VK_CULL_MODE_NONE;
+        pipelineConfig.depthStencilState.depthTest = VK_FALSE;
 
         pipelineConfig.shaderStages.push_back(vertexShaderStage);
         pipelineConfig.shaderStages.push_back(fragmentShaderStage);

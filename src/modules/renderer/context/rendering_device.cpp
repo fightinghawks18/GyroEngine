@@ -128,12 +128,15 @@ bool RenderingDevice::createInstance()
     appInfo.apiVersion = VK_API_VERSION_1_3;
     appInfo.pNext = nullptr;
 
+    const std::vector<const char*> supportedInstanceExtensions = deviceutils::enumerateVectorForSupportedInstanceExtensions(
+        extensions.extensions);
+
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
-    createInfo.enabledExtensionCount = extensions.extensions.size();
-    createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.enabledExtensionCount = supportedInstanceExtensions.size();
+    createInfo.ppEnabledExtensionNames = supportedInstanceExtensions.data();
 
     createInfo.enabledLayerCount = validationLayers.size();
     createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -383,10 +386,13 @@ bool RenderingDevice::createLogicalDevice()
     synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
     synchronization2Features.pNext = &indexingFeatures;
 
+    const std::vector<const char*> supportedDeviceExtensions = deviceutils::enumerateVectorForSupportedDeviceExtensions(
+        m_physicalDevice, deviceExtensions.extensions);
+
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.enabledExtensionCount = deviceExtensions.extensions.size();
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    createInfo.enabledExtensionCount = supportedDeviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = supportedDeviceExtensions.data();
     createInfo.pNext = &synchronization2Features;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();

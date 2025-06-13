@@ -7,13 +7,15 @@
 #include <vector>
 #include <SDL3/SDL_vulkan.h>
 
+#include "debug/printer.h"
+
 namespace deviceutils
 {
     struct RankedDevice
     {
-        VkPhysicalDevice physicalDevice;
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         uint32_t score = 0;
-        VkPhysicalDeviceProperties properties;
+        VkPhysicalDeviceProperties properties{};
     };
 
     enum class QueueType
@@ -76,5 +78,93 @@ namespace deviceutils
             exts.extensions.push_back(extension);
         }
         return exts;
+    }
+
+    /// @note Returns a new vector containing only the supported device extensions from the provided list.
+    static std::vector<const char*> enumerateVectorForSupportedDeviceExtensions(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
+    {
+        uint32_t extensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+
+        if (availableExtensions.empty())
+        {
+            Printer::error("No device extensions available");
+            throw std::runtime_error("No device extensions available");
+        }
+
+        std::vector<const char*> supportedExtensions;
+        for (const auto& requested : extensions)
+        {
+            bool found = false;
+            for (const auto& available : availableExtensions)
+            {
+                if (strcmp(requested, available.extensionName) == 0)
+                {
+                    supportedExtensions.push_back(requested);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                Printer::warn(requested + std::string(" is not supported by this device"));
+            }
+        }
+
+        if (supportedExtensions.empty())
+        {
+            Printer::error("No supported device extensions found");
+            throw std::runtime_error("No supported device extensions found");
+        }
+
+        return supportedExtensions;
+    }
+
+    /// @note Returns a new vector containing only the supported instance extensions from the provided list.
+    static std::vector<const char*> enumerateVectorForSupportedInstanceExtensions(const std::vector<const char*>& extensions)
+    {
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+        if (availableExtensions.empty())
+        {
+            Printer::error("No instance extensions available");
+            throw std::runtime_error("No instance extensions available");
+        }
+
+        std::vector<const char*> supportedExtensions;
+
+        for (const auto& requested : extensions)
+        {
+            bool found = false;
+            for (const auto& available : availableExtensions)
+            {
+                if (strcmp(requested, available.extensionName) == 0)
+                {
+                    supportedExtensions.push_back(requested);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                Printer::warn(requested + std::string(" is not supported by this instance"));
+            }
+        }
+
+        // Check if any extensions were found
+        if (supportedExtensions.empty())
+        {
+            Printer::error("No supported instance extensions found");
+            throw std::runtime_error("No supported instance extensions found");
+        }
+
+        return supportedExtensions;
     }
 }
