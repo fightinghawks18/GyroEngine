@@ -43,7 +43,7 @@ void SceneStep::execute(Renderer& renderer)
     colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.clearValue.color = { 1.0f, 0.0f, 1.0f, 1.0f };
+    colorAttachment.clearValue.color = { 1.0f, 0.0f, 0.0f, 1.0f };
 
     VkRenderingInfoKHR renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;

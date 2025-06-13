@@ -15,9 +15,11 @@ bool Renderer::init(Window* window)
 {
     m_window = window;
     m_surface = m_device.createSurface(m_window);
+    m_presentQueue = m_device.getPresentQueue(m_surface).queue;
 
     if (!createSwapchain()) return false;
     if (!createSwapchainImages()) return false;
+    if (!createImages()) return false;
     if (!createCommandBuffers()) return false;
     if (!createSyncObjects()) return false;
     return true;
@@ -33,6 +35,7 @@ void Renderer::cleanup()
         m_surface = VK_NULL_HANDLE;
     }
     destroySwapchainImages();
+    destroyImages();
     destroyCommandBuffers();
     destroySyncObjects();
 }
@@ -64,7 +67,7 @@ VkCommandBuffer Renderer::beginFrame()
     return startRecord();
 }
 
-void Renderer::setViewport(Viewport viewport)
+void Renderer::setViewport(const Viewport& viewport)
 {
     m_viewport = viewport;
 }
@@ -143,10 +146,10 @@ VkCommandBuffer Renderer::startRecord()
     if (m_viewport.width > 0 && m_viewport.height > 0)
     {
         VkViewport viewport{};
-        viewport.x = m_viewport.x * m_swapchainExtent.width;
-        viewport.y = m_viewport.y * m_swapchainExtent.height;
-        viewport.width = m_viewport.width * m_swapchainExtent.width;
-        viewport.height = m_viewport.height * m_swapchainExtent.height;
+        viewport.x = m_viewport.x * static_cast<float>(m_swapchainExtent.width);
+        viewport.y = m_viewport.y * static_cast<float>(m_swapchainExtent.height);
+        viewport.width = m_viewport.width * static_cast<float>(m_swapchainExtent.width);
+        viewport.height = m_viewport.height * static_cast<float>(m_swapchainExtent.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = m_viewport.depth;
 
@@ -228,7 +231,6 @@ bool Renderer::createSwapchain()
     // ^ or requirements doesn't cause any problems
     m_surfaceFormat = rendererutils::chooseBestSurfaceFormat(m_device.getPhysicalDevice(), m_surface);
     m_presentMode = rendererutils::chooseBestPresentMode(m_device.getPhysicalDevice(), m_surface);
-    m_presentQueue = m_device.getPresentQueue(m_surface).queue;
     m_swapchainImageFormat = m_surfaceFormat.format;
     m_swapchainExtent = rendererutils::chooseBestExtent(m_device.getPhysicalDevice(), m_surface, m_window->getWidth(), m_window->getHeight());
 
@@ -314,6 +316,52 @@ bool Renderer::createSwapchainImages()
 
         image->makePresent();
         m_swapchainImages.push_back(image);
+    }
+    return true;
+}
+
+bool Renderer::createImages()
+{
+    for (uint32_t i = 0; i < m_device.getMaxFramesInFlight(); ++i)
+    {
+        auto colorImage = new Image(m_device);
+        auto depthImage = new Image(m_device);
+        auto pipelineImage = new Image(m_device);
+
+        colorImage->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .setFormat(m_swapchainImageFormat);
+
+        depthImage->setAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
+            .setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .setFormat(m_device.getPreferredDepthFormat());
+
+        pipelineImage->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .setFormat(m_swapchainImageFormat);
+
+        if (!colorImage->init(VK_NULL_HANDLE, VK_NULL_HANDLE))
+        {
+            Printer::error("Failed to create color image");
+            return false;
+        }
+        if (!depthImage->init(VK_NULL_HANDLE, VK_NULL_HANDLE))
+        {
+            Printer::error("Failed to create depth image");
+            return false;
+        }
+        if (!pipelineImage->init(VK_NULL_HANDLE, VK_NULL_HANDLE))
+        {
+            Printer::error("Failed to create pipeline image");
+            return false;
+        }
+
+        m_colorImages.push_back(colorImage);
+        m_depthImages.push_back(depthImage);
+        m_pipelineImages.push_back(pipelineImage);
     }
     return true;
 }
@@ -409,6 +457,42 @@ void Renderer::destroySwapchainImages()
         }
     }
     m_swapchainImages.clear();
+}
+
+void Renderer::destroyImages()
+{
+    for (auto& image : m_colorImages)
+    {
+        if (image)
+        {
+            image->cleanup();
+            delete image;
+            image = nullptr;
+        }
+    }
+    m_colorImages.clear();
+
+    for (auto& image : m_depthImages)
+    {
+        if (image)
+        {
+            image->cleanup();
+            delete image;
+            image = nullptr;
+        }
+    }
+    m_depthImages.clear();
+
+    for (auto& image : m_pipelineImages)
+    {
+        if (image)
+        {
+            image->cleanup();
+            delete image;
+            image = nullptr;
+        }
+    }
+    m_pipelineImages.clear();
 }
 
 void Renderer::destroySwapchain()

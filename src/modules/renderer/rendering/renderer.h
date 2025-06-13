@@ -24,6 +24,10 @@ struct FrameContext
     Image* swapchainImage;
     VkExtent2D swapchainExtent;
 
+    Image* colorImage;
+    Image* depthImage;
+    Image* pipelineImage;
+
     Viewport viewport;
 };
 
@@ -42,7 +46,7 @@ public:
     void advanceFrame();
 
     VkCommandBuffer beginFrame();
-    void setViewport(Viewport viewport);
+    void setViewport(const Viewport& viewport);
     void renderFrame();
     void endFrame();
 
@@ -64,7 +68,15 @@ public:
         m_frameContext.swapchainImage = m_swapchainImages[m_currentImageIndex];
         m_frameContext.viewport = m_viewport;
         m_frameContext.swapchainExtent = m_swapchainExtent;
+        m_frameContext.colorImage = m_colorImages[m_currentFrame];
+        m_frameContext.depthImage = m_depthImages[m_currentFrame];
+        m_frameContext.pipelineImage = m_pipelineImages[m_currentFrame];
         return m_frameContext;
+    }
+
+    [[nodiscard]] std::vector<Image*>& getPipelineImages()
+    {
+        return m_pipelineImages;
     }
 private:
     RenderingDevice& m_device;
@@ -80,6 +92,9 @@ private:
     VkExtent2D m_swapchainExtent = {};
     VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
     std::vector<Image*> m_swapchainImages = {};
+    std::vector<Image*> m_colorImages = {};
+    std::vector<Image*> m_depthImages = {};
+    std::vector<Image*> m_pipelineImages = {};
 
     std::vector<VkSemaphore> m_imageAvailableSemaphores = {};
     std::vector<VkSemaphore> m_renderFinishedSemaphores = {};
@@ -100,11 +115,13 @@ private:
 
     bool createSwapchain();
     bool createSwapchainImages();
+    bool createImages();
     bool createCommandBuffers();
     bool createSyncObjects();
 
     void destroyCommandBuffers();
     void destroySyncObjects();
     void destroySwapchainImages();
+    void destroyImages();
     void destroySwapchain();
 };
