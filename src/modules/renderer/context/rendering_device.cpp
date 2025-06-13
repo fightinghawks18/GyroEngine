@@ -24,10 +24,8 @@ bool RenderingDevice::init()
     if (!createDeviceFamilies()) return false;
     if (!querySupportedColorFormats()) return false;
     if (!querySupportedDepthFormats()) return false;
-    if (!querySupportedStencilFormats()) return false;
     if (!findPreferredColorFormat()) return false;
     if (!findBestDepthFormat()) return false;
-    if (!findBestStencilFormat()) return false;
     return true;
 }
 
@@ -72,15 +70,6 @@ VkFormat RenderingDevice::queryDepthFormat(VkFormat format)
         return format;
     }
     return m_supportedDepthFormats[0];
-}
-
-VkFormat RenderingDevice::queryStencilFormat(VkFormat format)
-{
-    if (std::find(m_supportedStencilFormats.begin(), m_supportedStencilFormats.end(), format) != m_supportedStencilFormats.end())
-    {
-        return format;
-    }
-    return m_supportedStencilFormats[0];
 }
 
 VkSurfaceKHR RenderingDevice::createSurface(const Window *window) const
@@ -201,8 +190,8 @@ bool RenderingDevice::selectPhysicalDevice()
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, nullptr);
 
-    std::vector<VkPhysicalDevice> foundPhysicalDevices(physicalDeviceCount);
-    vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, foundPhysicalDevices.data());
+    std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+    vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices.data());
 
     if (physicalDeviceCount == 0)
     {
@@ -210,7 +199,8 @@ bool RenderingDevice::selectPhysicalDevice()
         return false;
     }
 
-    std::map<uint32_t, VkPhysicalDevice> physicalDevices;
+    std::vector<deviceutils::RankedDevice> rankedDevices;
+
     for (uint32_t i = 0; i < physicalDeviceCount; i++)
     {
         uint32_t rank = 0;
@@ -218,8 +208,8 @@ bool RenderingDevice::selectPhysicalDevice()
         VkPhysicalDeviceProperties properties;
         VkPhysicalDeviceFeatures features;
 
-        vkGetPhysicalDeviceProperties(foundPhysicalDevices[i], &properties);
-        vkGetPhysicalDeviceFeatures(foundPhysicalDevices[i], &features);
+        vkGetPhysicalDeviceProperties(physicalDevices[i], &properties);
+        vkGetPhysicalDeviceFeatures(physicalDevices[i], &features);
 
         switch (properties.deviceType)
         {
@@ -229,13 +219,13 @@ bool RenderingDevice::selectPhysicalDevice()
                 rank += 1000;
             }
             break;
-            case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
             if (m_acceptIntegrated)
             {
                 rank += 1000;
             }
             break;
-            case VK_PHYSICAL_DEVICE_TYPE_CPU:
+        case VK_PHYSICAL_DEVICE_TYPE_CPU:
             if (m_acceptCPU)
             {
                 rank += 1000;
@@ -258,7 +248,8 @@ bool RenderingDevice::selectPhysicalDevice()
         if (m_requiresTesselation && features.tessellationShader)
         {
             rank += 500;
-        } else if (m_requiresTesselation && !features.tessellationShader)
+        }
+        else if (m_requiresTesselation && !features.tessellationShader)
         {
             rank = 0;
         }
@@ -269,17 +260,23 @@ bool RenderingDevice::selectPhysicalDevice()
             continue;
         }
 
-        physicalDevices[i] = foundPhysicalDevices[i];
+        rankedDevices.push_back({physicalDevices[i], rank, properties});
     }
 
-    if (physicalDevices.empty())
+    if (rankedDevices.empty())
     {
         Printer::error("No supported physical devices found");
         return false;
     }
 
-    // Our physicalDevices is sorted in a map, first index will have the highest ranking
-    m_physicalDevice = physicalDevices.rbegin()->second;
+    // Pick the device with the highest rank
+    auto best = std::max_element(rankedDevices.begin(), rankedDevices.end(),
+        [](const deviceutils::RankedDevice& a, const deviceutils::RankedDevice& b) {
+            return a.score < b.score;
+        });
+
+    m_physicalDevice = best->physicalDevice;
+    Printer::print(std::string("Selected device: ") + best->properties.deviceName + " (score: " + std::to_string(best->score) + ")");
     return true;
 }
 
@@ -363,6 +360,7 @@ bool RenderingDevice::createLogicalDevice()
     });
 
     VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT unusedAttachmentFeatures{};
+    unusedAttachmentFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
     unusedAttachmentFeatures.dynamicRenderingUnusedAttachments = VK_TRUE;
 
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
@@ -546,12 +544,8 @@ bool RenderingDevice::querySupportedColorFormats()
 bool RenderingDevice::querySupportedDepthFormats()
 {
     std::vector availableDepthFormats = {
-        VK_FORMAT_D16_UNORM,
-        VK_FORMAT_X8_D24_UNORM_PACK32,
         VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT,
-        VK_FORMAT_D32_SFLOAT_S8_UINT,
-        VK_FORMAT_S8_UINT
+        VK_FORMAT_D32_SFLOAT_S8_UINT
     };
 
     for (const auto& format : availableDepthFormats)
@@ -572,34 +566,6 @@ bool RenderingDevice::querySupportedDepthFormats()
     }
     return true;
 }
-
-bool RenderingDevice::querySupportedStencilFormats()
-{
-    std::vector availableStencilFormats = {
-        VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT_S8_UINT,
-        VK_FORMAT_S8_UINT
-    };
-
-    for (const auto& format : availableStencilFormats)
-    {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(m_physicalDevice, format, &properties);
-
-        if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        {
-            m_supportedStencilFormats.push_back(format);
-        }
-    }
-
-    if (m_supportedStencilFormats.empty())
-    {
-        Printer::error("No supported stencil formats found");
-        return false;
-    }
-    return true;
-}
-
 void RenderingDevice::destroyCommandPool()
 {
     if (m_commandPool != VK_NULL_HANDLE)
@@ -709,28 +675,15 @@ bool RenderingDevice::findBestDepthFormat()
     for (const auto& format : m_supportedDepthFormats) {
         if (format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D32_SFLOAT_S8_UINT) {
             m_depthFormat = format;
-            return true;
-        }
-    }
-
-    // Fallback to the first supported format
-    m_depthFormat = m_supportedDepthFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedDepthFormats.front();;
-    return m_depthFormat != VK_FORMAT_UNDEFINED;
-}
-
-bool RenderingDevice::findBestStencilFormat()
-{
-    // Prioritize commonly used stencil formats
-    for (const auto& format : m_supportedStencilFormats) {
-        if (format == VK_FORMAT_S8_UINT) {
             m_stencilFormat = format;
             return true;
         }
     }
 
     // Fallback to the first supported format
-    m_stencilFormat = m_supportedStencilFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedStencilFormats.front();
-    return m_stencilFormat != VK_FORMAT_UNDEFINED;
+    m_depthFormat = m_supportedDepthFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedDepthFormats.front();;
+    m_stencilFormat = m_depthFormat;
+    return m_depthFormat != VK_FORMAT_UNDEFINED;
 }
 
 VkBool32 RenderingDevice::debugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

@@ -172,10 +172,6 @@ public:
         return m_supportedDepthFormats;
     }
 
-    [[nodiscard]] const std::vector<VkFormat>& getSupportedStencilFormats() const {
-        return m_supportedStencilFormats;
-    }
-
     [[nodiscard]] uint32_t getMaxFramesInFlight() const {
         return m_maxFramesInFlight;
     }
@@ -201,7 +197,6 @@ private:
 
     std::vector<VkFormat> m_supportedColorFormats;
     std::vector<VkFormat> m_supportedDepthFormats;
-    std::vector<VkFormat> m_supportedStencilFormats;
 
     uint32_t m_maxFramesInFlight = 2;
     PreferredColorFormatType m_preferredColorType = PreferredColorFormatType::sRGB;
@@ -228,7 +223,6 @@ private:
     bool createCommandPool();
     bool querySupportedColorFormats();
     bool querySupportedDepthFormats();
-    bool querySupportedStencilFormats();
 
     void destroyCommandPool();
     void destroyAllocator();
@@ -241,7 +235,6 @@ private:
 
     bool findPreferredColorFormat();
     bool findBestDepthFormat();
-    bool findBestStencilFormat();
 
     // Device static helpers
 

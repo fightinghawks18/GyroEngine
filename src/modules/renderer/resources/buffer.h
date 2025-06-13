@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include <cstring>
 #include <volk.h>
-
 #include "device_resource.h"
 #include "implementation/vma_implementation.h"
 

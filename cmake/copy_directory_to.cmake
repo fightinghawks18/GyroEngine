@@ -1,0 +1,18 @@
+function(copy_directory_to SOURCE_DIR DESTINATION_DIR)
+    if(NOT EXISTS "${SOURCE_DIR}")
+        message(FATAL_ERROR "Source directory does not exist: ${SOURCE_DIR}")
+    endif()
+
+    file(GLOB_RECURSE FILES_TO_COPY "${SOURCE_DIR}/*")
+
+    foreach(FILE_PATH IN LISTS FILES_TO_COPY)
+        if(IS_DIRECTORY "${FILE_PATH}")
+            continue()
+        endif()
+        file(RELATIVE_PATH REL_PATH "${SOURCE_DIR}" "${FILE_PATH}")
+        get_filename_component(DEST_PATH "${DESTINATION_DIR}/${REL_PATH}" ABSOLUTE)
+        get_filename_component(DEST_DIR "${DEST_PATH}" DIRECTORY)
+        file(MAKE_DIRECTORY "${DEST_DIR}")
+        file(COPY "${FILE_PATH}" DESTINATION "${DEST_DIR}")
+    endforeach()
+endfunction()

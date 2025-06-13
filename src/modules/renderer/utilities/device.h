@@ -9,6 +9,13 @@
 
 namespace deviceutils
 {
+    struct RankedDevice
+    {
+        VkPhysicalDevice physicalDevice;
+        uint32_t score = 0;
+        VkPhysicalDeviceProperties properties;
+    };
+
     enum class QueueType
     {
         None,

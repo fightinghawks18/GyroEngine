@@ -15,10 +15,6 @@ bool Renderer::init(Window* window)
 {
     m_window = window;
     m_surface = m_device.createSurface(m_window);
-    m_surfaceFormat = rendererutils::chooseBestSurfaceFormat(m_device.getPhysicalDevice(), m_surface);
-    m_presentMode = rendererutils::chooseBestPresentMode(m_device.getPhysicalDevice(), m_surface);
-    m_presentQueue = m_device.getPresentQueue(m_surface).queue;
-    m_swapchainImageFormat = m_surfaceFormat.format;
 
     if (!createSwapchain()) return false;
     if (!createSwapchainImages()) return false;
@@ -227,12 +223,21 @@ void Renderer::endRecord()
 
 bool Renderer::createSwapchain()
 {
+    // Query surface capabilities
+    // ^ Ensures that moving to a different monitor with a different colorspace
+    // ^ or requirements doesn't cause any problems
+    m_surfaceFormat = rendererutils::chooseBestSurfaceFormat(m_device.getPhysicalDevice(), m_surface);
+    m_presentMode = rendererutils::chooseBestPresentMode(m_device.getPhysicalDevice(), m_surface);
+    m_presentQueue = m_device.getPresentQueue(m_surface).queue;
+    m_swapchainImageFormat = m_surfaceFormat.format;
     m_swapchainExtent = rendererutils::chooseBestExtent(m_device.getPhysicalDevice(), m_surface, m_window->getWidth(), m_window->getHeight());
+
+    uint32_t minImageCount = rendererutils::getMinImageCount(m_device.getPhysicalDevice(), m_surface);
 
     VkSwapchainCreateInfoKHR swapchainInfo{};
     swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapchainInfo.surface = m_surface;
-    swapchainInfo.minImageCount = m_device.getMaxFramesInFlight();
+    swapchainInfo.minImageCount = minImageCount;
     swapchainInfo.imageFormat = m_surfaceFormat.format;
     swapchainInfo.imageColorSpace = m_surfaceFormat.colorSpace;
     swapchainInfo.imageExtent = m_swapchainExtent;

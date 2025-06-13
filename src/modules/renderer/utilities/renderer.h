@@ -11,6 +11,15 @@
 
 namespace rendererutils
 {
+    /// @note Queries the surface's capabilities to retrieve the minimum image count required
+    static uint32_t getMinImageCount(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    {
+        VkSurfaceCapabilitiesKHR surfaceCapabilities;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+        return surfaceCapabilities.minImageCount;
+    }
+
+    /// @note Queries the surface's capabilities to retrieve it's most suitable surface format
     static VkSurfaceFormatKHR chooseBestSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         uint32_t formatCount = 0;
@@ -35,6 +44,7 @@ namespace rendererutils
         return availableFormats[0]; // Fallback to the first available format
     }
 
+    /// @note Queries the surface's capabilities to retrieve the best present mode
     static VkPresentModeKHR chooseBestPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         uint32_t presentCount = 0;
@@ -59,6 +69,7 @@ namespace rendererutils
         return VK_PRESENT_MODE_FIFO_KHR; // FIFO is always available and is a safe fallback
     }
 
+    /// @note Queries the surface's capabilities to retrieve the best extent
     static VkExtent2D chooseBestExtent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t width, uint32_t height)
     {
         // Query surface capabilities
@@ -79,6 +90,7 @@ namespace rendererutils
         return surfaceCapabilities.currentExtent;
     }
 
+    /// @note Executes an action on a temporary command buffer
     static void submitOneTimeCommand(VkDevice device, VkCommandPool commandPool, VkQueue queue, std::function<void(VkCommandBuffer)> recordFunction)
     {
         VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };

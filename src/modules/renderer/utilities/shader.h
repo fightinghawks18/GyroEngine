@@ -46,11 +46,6 @@ namespace shaderutils
     }
 
     inline std::vector<uint32_t> compileShader(const std::string& source, shaderc_shader_kind kind) {
-        if (!std::filesystem::exists(source))
-        {
-            throw std::runtime_error("Failed to open shader file: " + source);
-        }
-
         std::string shaderSource = readShaderSource(source);
 
         shaderc::Compiler compiler;
@@ -65,10 +60,6 @@ namespace shaderutils
     }
 
     inline void compileShaderToFile(const std::string& sourcePath, shaderc_shader_kind kind) {
-        if (!std::filesystem::exists(sourcePath)) {
-            throw std::runtime_error("Shader file does not exist: " + sourcePath);
-        }
-
         std::string shaderSource = readShaderSource(sourcePath);
 
         shaderc::Compiler compiler;

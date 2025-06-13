@@ -1,3 +1,5 @@
+include(${CMAKE_SOURCE_DIR}/cmake/copy_directory_to.cmake)
+
 add_executable(GCubeApp
     main.cpp
 )
@@ -13,14 +15,8 @@ target_link_libraries(GCubeApp PUBLIC
     PlatformModule
 )
 
-add_custom_command(
-        OUTPUT ${GyroBuildDir}/content
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/content ${GyroBuildDir}/content
-        COMMENT "Copying content folder to build directory"
-)
-
-add_custom_target(copy_content ALL DEPENDS ${GyroBuildDir}/content)
-
 target_include_directories(GCubeApp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+# Copy content to the build directory
+copy_directory_to(${CMAKE_CURRENT_SOURCE_DIR}/content ${GyroBuildDir}/content)

@@ -4,6 +4,7 @@ add_library(UtilitiesModule STATIC
         tasks/maid.cpp
         debug/printer.cpp
         types.h
+        utils.h
 )
 
 set_target_properties(UtilitiesModule

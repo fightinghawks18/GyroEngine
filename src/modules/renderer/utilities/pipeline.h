@@ -13,20 +13,30 @@ namespace pipelineutils
     {
         uint32_t binding = 0;
         uint32_t location = 0;
-        uint32_t stride = 0;
         uint32_t offset = 0;
-        VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         VkFormat format = VK_FORMAT_UNDEFINED;
+    };
+
+    struct PipelineInputBinding
+    {
+        uint32_t binding = 0;
+        uint32_t stride = 0;
+        VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     };
 
     struct PipelineInputState
     {
         std::vector<PipelineInputAttribute> inputAttributes;
+        std::vector<PipelineInputBinding> inputBindings;
 
-        void addAttribute(uint32_t binding, uint32_t location, uint32_t stride, uint32_t offset,
-                          VkVertexInputRate inputRate, VkFormat format)
+        void addAttribute(uint32_t binding, uint32_t location, uint32_t offset, VkFormat format)
         {
-            inputAttributes.push_back({binding, location, stride, offset, inputRate, format});
+            inputAttributes.push_back({binding, location, offset, format});
+        }
+
+        void addBinding(uint32_t binding, uint32_t stride, VkVertexInputRate inputRate)
+        {
+            inputBindings.push_back({binding, stride, inputRate});
         }
     };
 

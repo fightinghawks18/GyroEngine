@@ -3,9 +3,11 @@
 //
 
 #include <iostream>
+#include <memory>
 
 #include <SDL3/SDL.h>
 
+#include "utils.h"
 #include "window.h"
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
@@ -21,10 +23,9 @@ int main()
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return -1;
     }
-    {
         // Compile shaders first
-        shaderutils::compileShaderToFile("content/shaders/simple_object.vert", shaderc_vertex_shader);
-        shaderutils::compileShaderToFile("content/shaders/simple_object.frag", shaderc_fragment_shader);
+        shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/simple_object.vert", shaderc_vertex_shader);
+        shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/simple_object.frag", shaderc_fragment_shader);
 
         auto window = std::make_unique<Window>();
         if (!window->create())
@@ -56,6 +57,7 @@ int main()
             0, 1, 2 // Triangle
         };
 
+    {
         auto clearPass = std::make_shared<ClearStep>();
         auto scenePass = std::make_shared<SceneStep>();
 
@@ -77,18 +79,18 @@ int main()
                     .setSharingMode(VK_SHARING_MODE_EXCLUSIVE)
                     .init();
         indexBuffer->setBufferType(Buffer::BufferType::Index)
-                    .setSize(indices.size() * sizeof(uint32_t))
-                    .setUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-                    .setMemoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                    .setSharingMode(VK_SHARING_MODE_EXCLUSIVE)
-                    .init();
+                   .setSize(indices.size() * sizeof(uint32_t))
+                   .setUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+                   .setMemoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                   .setSharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                   .init();
 
         auto vertexShader = std::make_shared<Shader>(*device);
         auto fragmentShader = std::make_shared<Shader>(*device);
 
-        vertexShader->setShaderPath("content/shaders/simple_object.vert.spv")
+        vertexShader->setShaderPath(utils::getExecutableDir() + "/content/shaders/simple_object.vert.spv")
                     .init();
-        fragmentShader->setShaderPath("content/shaders/simple_object.frag.spv")
+        fragmentShader->setShaderPath(utils::getExecutableDir() + "/content/shaders/simple_object.frag.spv")
                       .init();
 
         auto& pipelineConfig = pipeline->getPipelineConfig();
@@ -107,18 +109,21 @@ int main()
         colorAttachment.blendEnable = false;
         pipelineConfig.colorBlendState.colorBlendStates.push_back(colorAttachment);
 
+        pipelineConfig.vertexInputState.addBinding(
+            0,
+            sizeof(types::Vertex),
+            VK_VERTEX_INPUT_RATE_VERTEX);
+
         pipelineConfig.vertexInputState.addAttribute(
             0,
             0,
-            sizeof(types::Vertex),
             offsetof(types::Vertex, position),
-            VK_VERTEX_INPUT_RATE_VERTEX, VK_FORMAT_R32G32B32_SFLOAT);
+            VK_FORMAT_R32G32B32_SFLOAT);
         pipelineConfig.vertexInputState.addAttribute(
             0,
             1,
-            sizeof(types::Vertex),
             offsetof(types::Vertex, color),
-            VK_VERTEX_INPUT_RATE_VERTEX, VK_FORMAT_R32G32B32_SFLOAT);
+            VK_FORMAT_R32G32B32_SFLOAT);
 
         pipelineConfig.shaderStages.push_back(vertexShaderStage);
         pipelineConfig.shaderStages.push_back(fragmentShaderStage);
@@ -144,13 +149,17 @@ int main()
                     renderer->getPipeline().addStep(scenePass);
                     renderer->renderFrame();
                     renderer->endFrame();
-                } else
+                }
+                else
                 {
                     renderer->advanceFrame();
                 }
             }
         }
     }
+    renderer->cleanup();
+    device->cleanup();
+    window->destroy();
     SDL_Quit();
     return 0;
 }

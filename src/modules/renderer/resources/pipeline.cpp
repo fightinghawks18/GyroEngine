@@ -111,8 +111,8 @@ bool Pipeline::buildPipeline()
 {
     m_pipelineConfig.pipelineLayout = m_pipelineLayout;
 
-    VkGraphicsPipelineCreateInfo info = {};
-    info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    VkGraphicsPipelineCreateInfo pipelineInfo = {};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
     // Shader stages
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -127,14 +127,14 @@ bool Pipeline::buildPipeline()
         shaderStages.push_back(shaderStageInfo);
     }
 
-    info.stageCount = shaderStages.size();
-    info.pStages = shaderStages.data();
+    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.pStages = shaderStages.data();
 
     // Vertex input
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
 
-    vertexInputBindingDescriptions.reserve(m_pipelineConfig.vertexInputState.inputAttributes.size());
+    vertexInputBindingDescriptions.reserve(m_pipelineConfig.vertexInputState.inputBindings.size());
     vertexInputAttributeDescriptions.reserve(m_pipelineConfig.vertexInputState.inputAttributes.size());
     for (const auto& inputAttribute : m_pipelineConfig.vertexInputState.inputAttributes)
     {
@@ -144,12 +144,15 @@ bool Pipeline::buildPipeline()
         vertexInputAttributeDescription.format = inputAttribute.format;
         vertexInputAttributeDescription.offset = inputAttribute.offset;
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
+    }
 
-        VkVertexInputBindingDescription bindingDescription = {};
-        bindingDescription.binding = inputAttribute.binding;
-        bindingDescription.stride = inputAttribute.stride;
-        bindingDescription.inputRate = inputAttribute.inputRate;
-        vertexInputBindingDescriptions.push_back(bindingDescription);
+    for (const auto& inputBinding : m_pipelineConfig.vertexInputState.inputBindings)
+    {
+        VkVertexInputBindingDescription vertexInputBindingDescription = {};
+        vertexInputBindingDescription.binding = inputBinding.binding;
+        vertexInputBindingDescription.stride = inputBinding.stride;
+        vertexInputBindingDescription.inputRate = inputBinding.inputRate;
+        vertexInputBindingDescriptions.push_back(vertexInputBindingDescription);
     }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
@@ -237,21 +240,21 @@ bool Pipeline::buildPipeline()
     colorBlending.attachmentCount = colorBlendAttachments.size();
     colorBlending.pAttachments = colorBlendAttachments.data();
 
-    info.pViewportState = &viewportState;
-    info.pRasterizationState = &rasterizer;
-    info.pMultisampleState = &multisample;
-    info.pDepthStencilState = &depthStencil;
-    info.pColorBlendState = &colorBlending;
-    info.pVertexInputState = &vertexInputInfo;
-    info.pInputAssemblyState = &inputAssembly;
-    info.pDynamicState = &dynamicState;
-    info.pNext = &renderingInfo;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisample;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pDynamicState = &dynamicState;
+    pipelineInfo.pNext = &renderingInfo;
 
-    info.layout = m_pipelineConfig.pipelineLayout;
-    info.renderPass = VK_NULL_HANDLE;
-    info.subpass = 0;
+    pipelineInfo.layout = m_pipelineConfig.pipelineLayout;
+    pipelineInfo.renderPass = VK_NULL_HANDLE;
+    pipelineInfo.subpass = 0;
 
-    VkResult result = vkCreateGraphicsPipelines(m_device.getLogicalDevice(), VK_NULL_HANDLE, 1, &info, nullptr,
+    VkResult result = vkCreateGraphicsPipelines(m_device.getLogicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                                 &m_pipeline);
     if (result != VK_SUCCESS)
     {
