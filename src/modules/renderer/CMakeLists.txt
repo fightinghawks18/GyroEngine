@@ -47,6 +47,9 @@ add_library(RendererModule STATIC
         utilities/shader.h
         rendering/render_steps/scene_step.cpp
         rendering/render_steps/scene_step.h
+        rendering/render_steps/post_step.cpp
+        rendering/render_steps/post_step.h
+        resources/push_constant.h
 )
 
 set_target_properties(RendererModule

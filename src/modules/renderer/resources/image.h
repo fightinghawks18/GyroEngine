@@ -46,6 +46,7 @@ public:
     void makePresent(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
     void makeTransferSrc(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
     void makeTransferDst(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void makeShaderReadable(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
     void moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
     void copyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
 
@@ -59,6 +60,11 @@ public:
 
     [[nodiscard]] VkImageLayout getImageLayout() const {
         return m_imageLayout;
+    }
+
+    [[nodiscard]] VkExtent3D getExtent() const
+    {
+        return m_extent;
     }
 private:
     VkImage m_image = VK_NULL_HANDLE;

@@ -24,6 +24,12 @@ DescriptorPool& DescriptorPool::clearPoolSizes()
     return *this;
 }
 
+DescriptorPool & DescriptorPool::setMaxSets(uint32_t maxSets)
+{
+    m_maxSets = maxSets;
+    return *this;
+}
+
 bool DescriptorPool::init()
 {
     if (m_descriptorPool != VK_NULL_HANDLE)
@@ -55,6 +61,8 @@ bool DescriptorPool::createDescriptorPool()
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     descriptorPoolInfo.pPoolSizes = poolSizes.data();
+    descriptorPoolInfo.maxSets = m_maxSets;
+    descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     VkResult result = vkCreateDescriptorPool(m_device.getLogicalDevice(), &descriptorPoolInfo, nullptr, &m_descriptorPool);
     if (result != VK_SUCCESS)

@@ -9,6 +9,14 @@
 #include <vector>
 #include <volk.h>
 
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 namespace rendererutils
 {
     /// @note Queries the surface's capabilities to retrieve the minimum image count required

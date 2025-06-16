@@ -90,6 +90,7 @@ bool DescriptorSet::createDescriptorSet()
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.descriptorPool = m_descriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = &m_layout;
 
     VkResult result = vkAllocateDescriptorSets(m_device.getLogicalDevice(), &descriptorSetAllocateInfo, &m_descriptorSet);
     if (result != VK_SUCCESS)

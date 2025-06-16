@@ -128,7 +128,7 @@ namespace pipelineutils
         PipelineMultisampleState multisampleState{};
         PipelineColorBlendState colorBlendState{};
         PipelineBlendState blendState{};
-        std::vector<PipelinePushConstant> pushConstants{};
+        std::vector<PushConstant*> pushConstants{};
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkFormat colorFormat = VK_FORMAT_UNDEFINED;
     };

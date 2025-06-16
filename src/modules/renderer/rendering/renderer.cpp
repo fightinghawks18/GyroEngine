@@ -20,6 +20,7 @@ bool Renderer::init(Window* window)
     if (!createSwapchain()) return false;
     if (!createSwapchainImages()) return false;
     if (!createImages()) return false;
+    if (!createSampler()) return false;
     if (!createCommandBuffers()) return false;
     if (!createSyncObjects()) return false;
     return true;
@@ -36,6 +37,7 @@ void Renderer::cleanup()
     }
     destroySwapchainImages();
     destroyImages();
+    destroySampler();
     destroyCommandBuffers();
     destroySyncObjects();
 }
@@ -46,12 +48,13 @@ bool Renderer::recreate()
 
     destroyCommandBuffers();
     destroySyncObjects();
+    destroyImages();
 
     if (!createSwapchain()) return false;
     if (!createSwapchainImages()) return false;
-
-    createCommandBuffers();
-    createSyncObjects();
+    if (!createImages()) return false;
+    if (!createCommandBuffers()) return false;
+    if (!createSyncObjects()) return false;
 
     Printer::print("Recreated swapchain on frame " + std::to_string(m_currentFrame));
     return true;
@@ -329,7 +332,7 @@ bool Renderer::createImages()
         auto pipelineImage = new Image(m_device);
 
         colorImage->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
             .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
             .setFormat(m_swapchainImageFormat);
 
@@ -339,7 +342,7 @@ bool Renderer::createImages()
             .setFormat(m_device.getPreferredDepthFormat());
 
         pipelineImage->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
             .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
             .setFormat(m_swapchainImageFormat);
 
@@ -363,6 +366,27 @@ bool Renderer::createImages()
         m_depthImages.push_back(depthImage);
         m_pipelineImages.push_back(pipelineImage);
     }
+    return true;
+}
+
+bool Renderer::createSampler()
+{
+    auto* sampler = new Sampler(m_device);
+    sampler->setMagFilter(VK_FILTER_LINEAR)
+           .setMinFilter(VK_FILTER_LINEAR)
+           .setAddressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+           .setAddressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+           .setAddressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+           .setAnisotropyLevel(1.0f)
+           .setAnisotropy(false);
+    if (!sampler->init())
+    {
+        Printer::error("Failed to create sampler");
+        delete sampler;
+        m_sampler = nullptr;
+        return false;
+    }
+    m_sampler = sampler;
     return true;
 }
 
@@ -457,6 +481,16 @@ void Renderer::destroySwapchainImages()
         }
     }
     m_swapchainImages.clear();
+}
+
+void Renderer::destroySampler()
+{
+    if (m_sampler)
+    {
+        m_sampler->cleanup();
+        delete m_sampler;
+        m_sampler = nullptr;
+    }
 }
 
 void Renderer::destroyImages()

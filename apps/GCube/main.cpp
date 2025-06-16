@@ -12,9 +12,12 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 #include "rendering/render_steps/clear_step.h"
+#include "rendering/render_steps/post_step.h"
 #include "rendering/render_steps/scene_step.h"
+#include "resources/push_constant.h"
 #include "resources/shader.h"
 #include "utilities/shader.h"
+
 
 int main()
 {
@@ -26,6 +29,9 @@ int main()
         // Compile shaders first
         shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/simple_object.vert", shaderc_vertex_shader);
         shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/simple_object.frag", shaderc_fragment_shader);
+        shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/blur_h.frag", shaderc_fragment_shader);
+        shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/blur_v.frag", shaderc_fragment_shader);
+        shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/fullscreen_quad.vert", shaderc_vertex_shader);
 
         auto window = std::make_unique<Window>();
         if (!window->create())
@@ -91,6 +97,7 @@ int main()
     {
         auto clearPass = std::make_shared<ClearStep>();
         auto scenePass = std::make_shared<SceneStep>();
+        auto postPass = std::make_shared<PostStep>();
 
         Viewport viewport{0};
         viewport.width = 1.f;
@@ -167,6 +174,122 @@ int main()
 
         pipeline->init();
 
+        auto quadShader = std::make_shared<Shader>(*device);
+        quadShader->setShaderPath(utils::getExecutableDir() + "/content/shaders/fullscreen_quad.vert.spv")
+                   .init();
+
+        auto blurhShader = std::make_shared<Shader>(*device);
+        auto blurvShader = std::make_shared<Shader>(*device);
+        blurhShader->setShaderPath(utils::getExecutableDir() + "/content/shaders/blur_h.frag.spv");
+        blurvShader->setShaderPath(utils::getExecutableDir() + "/content/shaders/blur_v.frag.spv");
+
+        if (!blurhShader->init() || !blurvShader->init())
+        {
+            std::cerr << "Failed to initialize blur shaders." << std::endl;
+            return -1;
+        }
+
+        pipelineutils::PipelineShaderStage quadShaderStage = {};
+        quadShaderStage.entryPoint = "main";
+        quadShaderStage.module = quadShader->getShaderModule();
+        quadShaderStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
+
+        pipelineutils::PipelineShaderStage blurhShaderStage = {};
+        blurhShaderStage.entryPoint = "main";
+        blurhShaderStage.module = blurhShader->getShaderModule();
+        blurhShaderStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        pipelineutils::PipelineShaderStage blurvShaderStage = {};
+        blurvShaderStage.entryPoint = "main";
+        blurvShaderStage.module = blurvShader->getShaderModule();
+        blurvShaderStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        // Create post process pipeline
+        // ^ This pass will be used to apply a horizontal and vertical blur to the scene
+
+        auto blurhPConstant = new PushConstant();
+        blurhPConstant->setStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
+                     .setOffset(0)
+                     .setSize(sizeof(float));
+
+        auto blurvPConstant = new PushConstant();
+        blurvPConstant->setStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
+                     .setOffset(0)
+                     .setSize(sizeof(float));
+
+        auto blurhPipeline = std::make_shared<Pipeline>(*device);
+        blurhPipeline->setColorFormat(renderer->getSwapchainColorFormat());
+
+
+        blurhPipeline->getPipelineConfig().pushConstants.push_back(blurhPConstant);
+
+        blurhPipeline->getPipelineConfig().inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+        blurhPipeline->getPipelineConfig().colorBlendState.colorBlendStates.push_back(colorAttachment);
+        blurhPipeline->getPipelineConfig().rasterizerState.cullMode = VK_CULL_MODE_NONE;
+        blurhPipeline->getPipelineConfig().depthStencilState.depthTest = VK_FALSE;
+
+        blurhPipeline->getPipelineConfig().shaderStages.push_back(quadShaderStage);
+        blurhPipeline->getPipelineConfig().shaderStages.push_back(blurhShaderStage);
+
+        auto blurvPipeline = std::make_shared<Pipeline>(*device);
+        blurvPipeline->setColorFormat(renderer->getSwapchainColorFormat());
+
+        blurvPipeline->getPipelineConfig().pushConstants.push_back(blurvPConstant);
+
+        blurvPipeline->getPipelineConfig().inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+        blurvPipeline->getPipelineConfig().colorBlendState.colorBlendStates.push_back(colorAttachment);
+        blurvPipeline->getPipelineConfig().rasterizerState.cullMode = VK_CULL_MODE_NONE;
+        blurvPipeline->getPipelineConfig().depthStencilState.depthTest = VK_FALSE;
+
+        blurvPipeline->getPipelineConfig().shaderStages.push_back(quadShaderStage);
+        blurvPipeline->getPipelineConfig().shaderStages.push_back(blurvShaderStage);
+
+        auto blurhDescriptorManager = std::make_shared<DescriptorManager>(*device);
+        auto blurvDescriptorManager = std::make_shared<DescriptorManager>(*device);
+
+        auto blurhDescriptorLayout = blurhDescriptorManager->createDescriptorLayout();
+        auto blurvDescriptorLayout = blurvDescriptorManager->createDescriptorLayout();
+
+        blurhDescriptorLayout->addBinding({0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT});
+        blurvDescriptorLayout->addBinding({0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT});
+
+        auto blurhPool = blurhDescriptorManager->createDescriptorPool();
+        auto blurvPool = blurvDescriptorManager->createDescriptorPool();
+
+        blurhPool->addPoolSize({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 200});
+        blurvPool->addPoolSize({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 200});
+        blurhPool->setMaxSets(1);
+        blurvPool->setMaxSets(1);
+
+        blurhDescriptorLayout->init();
+        blurvDescriptorLayout->init();
+        blurhPool->init();
+        blurvPool->init();
+
+        blurvPipeline->setDescriptorManager(blurvDescriptorManager);
+        blurhPipeline->setDescriptorManager(blurhDescriptorManager);
+
+        blurhPipeline->init();
+        blurvPipeline->init();
+
+        auto blurhDescriptorSet = blurhDescriptorManager->createDescriptorSet(blurhPool, blurhDescriptorLayout);
+        auto blurvDescriptorSet = blurvDescriptorManager->createDescriptorSet(blurvPool, blurvDescriptorLayout);
+
+        if (!blurhDescriptorSet->init() || !blurvDescriptorSet->init())
+        {
+            std::cerr << "Failed to initialize descriptor sets for post processing." << std::endl;
+            return -1;
+        }
+
+        // Add the post process pipelines to the post pass
+
+        postPass->addPipeline({ blurhPipeline.get(), blurhDescriptorSet.get(), 0 });
+        postPass->addPipeline({ blurvPipeline.get(), blurvDescriptorSet.get(), 0 });
+
+        // Add object data to the scene pass
+
         scenePass->setIndexBuffer(indexBuffer.get());
         scenePass->setVertexBuffer(vertexBuffer.get());
         scenePass->setIndices(indices);
@@ -180,18 +303,29 @@ int main()
         device->manageResource(vertexShader);
         device->manageResource(fragmentShader);
 
-
         while (!window->isRequestedQuit())
         {
             window->update();
             if (window->isValid())
             {
+                auto screenWidth = static_cast<float>(window->getWidth());
+                auto screenHeight = static_cast<float>(window->getHeight());
+
+                float blurHValue = 1.0f / screenWidth;
+                float blurVValue = 1.0f / screenHeight;
+
+                blurhPConstant->set(&blurHValue, sizeof(float), 0);
+                blurvPConstant->set(&blurVValue, sizeof(float), 0);
+
                 VkCommandBuffer commandBuffer = renderer->beginFrame();
                 if (commandBuffer != VK_NULL_HANDLE)
                 {
+
+
                     renderer->setViewport(viewport);
                     renderer->getPipeline().addStep(clearPass);
                     renderer->getPipeline().addStep(scenePass);
+                    renderer->getPipeline().addStep(postPass);
                     renderer->renderFrame();
                     renderer->endFrame();
                 }
@@ -204,6 +338,11 @@ int main()
                 break;
             }
         }
+
+        blurhDescriptorManager.reset();
+        blurvDescriptorManager.reset();
+        delete blurhPConstant;
+        delete blurvPConstant;
     }
     renderer.reset();
     window.reset();

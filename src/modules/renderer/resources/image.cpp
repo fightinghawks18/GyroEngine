@@ -137,6 +137,11 @@ void Image::makeTransferDst(const deviceutils::QueueType dstQueue)
     moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstQueue);
 }
 
+void Image::makeShaderReadable(deviceutils::QueueType dstQueue)
+{
+    moveToLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, dstQueue);
+}
+
 void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue)
 {
     uint32_t dstQueueIndex = 0;

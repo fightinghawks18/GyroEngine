@@ -11,6 +11,7 @@
 #include "viewport.h"
 #include "../../platform/window.h"
 #include "resources/image.h"
+#include "resources/sampler.h"
 
 class RenderingDevice;
 
@@ -24,9 +25,11 @@ struct FrameContext
     Image* swapchainImage;
     VkExtent2D swapchainExtent;
 
+    Sampler* sampler;
+
     Image* colorImage;
     Image* depthImage;
-    Image* pipelineImage;
+    std::vector<Image*> pipelineImages;
 
     Viewport viewport;
 };
@@ -70,7 +73,8 @@ public:
         m_frameContext.swapchainExtent = m_swapchainExtent;
         m_frameContext.colorImage = m_colorImages[m_currentFrame];
         m_frameContext.depthImage = m_depthImages[m_currentFrame];
-        m_frameContext.pipelineImage = m_pipelineImages[m_currentFrame];
+        m_frameContext.pipelineImages = m_pipelineImages;
+        m_frameContext.sampler = m_sampler;
         return m_frameContext;
     }
 
@@ -96,6 +100,8 @@ private:
     std::vector<Image*> m_depthImages = {};
     std::vector<Image*> m_pipelineImages = {};
 
+    Sampler* m_sampler = nullptr;
+
     std::vector<VkSemaphore> m_imageAvailableSemaphores = {};
     std::vector<VkSemaphore> m_renderFinishedSemaphores = {};
     std::vector<VkFence> m_inFlightFences = {};
@@ -116,12 +122,14 @@ private:
     bool createSwapchain();
     bool createSwapchainImages();
     bool createImages();
+    bool createSampler();
     bool createCommandBuffers();
     bool createSyncObjects();
 
     void destroyCommandBuffers();
     void destroySyncObjects();
     void destroySwapchainImages();
+    void destroySampler();
     void destroyImages();
     void destroySwapchain();
 };

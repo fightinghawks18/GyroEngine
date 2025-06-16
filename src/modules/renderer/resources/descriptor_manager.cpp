@@ -4,6 +4,8 @@
 
 #include "descriptor_manager.h"
 
+#include "context/rendering_device.h"
+
 DescriptorManager::DescriptorManager(RenderingDevice& device)
     : m_device(device)
 {
@@ -13,6 +15,7 @@ DescriptorManager::~DescriptorManager() = default;
 
 void DescriptorManager::cleanup()
 {
+    m_device.waitIdle();
     for (const auto& pool : m_descriptorPools) {
         pool->cleanup();
     }

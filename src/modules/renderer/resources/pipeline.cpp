@@ -39,6 +39,7 @@ bool Pipeline::init()
 
 void Pipeline::cleanup()
 {
+    m_device.waitIdle();
     if (m_pipeline != VK_NULL_HANDLE)
     {
         vkDestroyPipeline(m_device.getLogicalDevice(), m_pipeline, nullptr);
@@ -67,6 +68,27 @@ void Pipeline::bind(const FrameContext& frameContext)
             descriptorSet->bind(frameContext, m_pipelineLayout);
         }
     }
+
+    if (!m_pipelineConfig.pushConstants.empty())
+    {
+        for (const auto& pushConstant : m_pipelineConfig.pushConstants)
+        {
+            pushConstant->push(frameContext.cmd, m_pipelineLayout);
+        }
+    }
+}
+
+void Pipeline::drawQuad(const FrameContext &frameContext)
+{
+    VkCommandBuffer cmd = frameContext.cmd;
+    if (m_pipelineConfig.inputAssemblyState.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+    {
+        vkCmdDraw(cmd, 6, 1, 0, 0); // Draw quad as 2 triangles
+    }
+    else
+    {
+        vkCmdDraw(cmd, 4, 1, 0, 0); // Draw quad as triangle strip
+    }
 }
 
 bool Pipeline::buildPipelineLayout()
@@ -74,19 +96,19 @@ bool Pipeline::buildPipelineLayout()
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
+    m_descriptorSetLayouts.clear();
     if (m_descriptorManager)
     {
         auto descriptorLayouts = m_descriptorManager->getDescriptorLayouts();
-
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        descriptorSetLayouts.reserve(descriptorLayouts.size());
+        m_descriptorSetLayouts.reserve(descriptorLayouts.size());
         for (auto& descriptorLayout : descriptorLayouts)
         {
-            descriptorSetLayouts.push_back(descriptorLayout->getDescriptorSetLayout());
+            m_descriptorSetLayouts.push_back(descriptorLayout->getDescriptorSetLayout());
         }
 
-        pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
-        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size();
+        pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();
+        //
     }
     else
     {
@@ -94,9 +116,25 @@ bool Pipeline::buildPipelineLayout()
         pipelineLayoutInfo.pSetLayouts = nullptr;
     }
 
-    // TODO: Create push constants
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    if (!m_pipelineConfig.pushConstants.empty())
+    {
+        m_pushConstantRanges.clear();
+        m_pushConstantRanges.reserve(m_pipelineConfig.pushConstants.size());
+        for (const auto& pushConstant : m_pipelineConfig.pushConstants)
+        {
+            VkPushConstantRange pushConstantRange = {};
+            pushConstantRange.stageFlags = pushConstant->getStageFlags();
+            pushConstantRange.offset = pushConstant->getOffset();
+            pushConstantRange.size = pushConstant->getSize();
+            m_pushConstantRanges.push_back(pushConstantRange);
+        }
+        pipelineLayoutInfo.pushConstantRangeCount = m_pushConstantRanges.size();
+        pipelineLayoutInfo.pPushConstantRanges = m_pushConstantRanges.data();
+    } else
+    {
+        pipelineLayoutInfo.pushConstantRangeCount = 0;
+        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    }
 
     if (vkCreatePipelineLayout(m_device.getLogicalDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) !=
         VK_SUCCESS)

@@ -9,7 +9,7 @@
 #ifdef __linux__
 #include <unistd.h>
 #include <climits>
-#elifdef _WIN32
+#elif defined(_WIN32)
 #include <windows.h>
 #endif
 
@@ -25,7 +25,7 @@ namespace utils
             return std::filesystem::path(result).parent_path().string();
         }
         return {};
-#elifdef _WIN32
+#elif defined(_WIN32)
         char result[MAX_PATH];
         GetModuleFileNameA(nullptr, result, MAX_PATH);
         return std::filesystem::path(result).parent_path().string();

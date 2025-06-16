@@ -15,7 +15,7 @@ void ClearStep::execute(Renderer& renderer)
 
     VkRenderingAttachmentInfoKHR colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    colorAttachment.imageView = frame.swapchainImage->getImageView();
+    colorAttachment.imageView = frame.colorImage->getImageView();
     colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

@@ -26,6 +26,10 @@ public:
 
     bool init() override;
     void cleanup() override;
+
+    [[nodiscard]] VkSampler getSampler() const {
+        return m_sampler;
+    }
 private:
     VkSampler m_sampler = VK_NULL_HANDLE;
 

@@ -23,6 +23,8 @@ public:
     DescriptorPool& addPoolSize(PoolSize poolSize);
     DescriptorPool& clearPoolSizes();
 
+    DescriptorPool& setMaxSets(uint32_t maxSets);
+
     bool init() override;
     void cleanup() override;
 
@@ -33,6 +35,7 @@ public:
 private:
     VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
 
+    uint32_t m_maxSets = 0;
     std::vector<PoolSize> m_descriptorPoolSizes;
 
     bool createDescriptorPool();
