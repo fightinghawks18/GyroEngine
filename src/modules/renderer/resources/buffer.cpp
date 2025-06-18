@@ -15,13 +15,13 @@ namespace GyroEngine::Resources
     return *this;
 }
 
-Buffer& Buffer::SetSize(const VkDeviceSize size)
+Buffer& Buffer::SetSize(VkDeviceSize size)
 {
     m_size = size;
     return *this;
 }
 
-Buffer& Buffer::SetUsage(const VkBufferUsageFlags usage)
+Buffer& Buffer::SetUsage(VkBufferUsageFlags usage)
 {
     m_usage = usage;
     return *this;
@@ -33,7 +33,7 @@ Buffer& Buffer::SetMemoryUsage(const VmaMemoryUsage memoryUsage)
     return *this;
 }
 
-Buffer& Buffer::SetSharingMode(const VkSharingMode sharingMode)
+Buffer& Buffer::SetSharingMode(VkSharingMode sharingMode)
 {
     m_sharingMode = sharingMode;
     return *this;
@@ -83,7 +83,7 @@ void Buffer::Map(const void* data) const
         }
         else
         {
-            Printer::LogError("Failed to map buffer memory");
+            Logger::LogError("Failed to map buffer memory");
         }
     }
 }
@@ -121,7 +121,7 @@ bool Buffer::CreateBuffer()
     if (vmaCreateBuffer(m_device.GetAllocator(), &bufferInfo, &vmaInfo, &m_buffer, &m_allocation, nullptr) !=
         VK_SUCCESS)
     {
-        Printer::LogError("Failed to create buffer");
+        Logger::LogError("Failed to create buffer");
         return false;
     }
     return true;

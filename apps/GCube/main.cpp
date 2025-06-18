@@ -11,6 +11,8 @@
 #include "window.h"
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
+#include "rendering/rendergraph/render_graph.h"
+#include "rendering/rendergraph/passes/clear_pass.h"
 #include "utilities/shader.h"
 
 using namespace GyroEngine;
@@ -57,6 +59,12 @@ int main()
     }
 
 
+    const auto clearPass = std::make_shared<Rendering::Passes::ClearPass>();
+    const auto renderGraph = std::make_shared<Rendering::RenderGraph>();
+    renderGraph->SetDebug(true);
+
+    clearPass->SetClearColor({0.1f, 0.1f, 0.1f, 1.0f});
+
     while (!window->HasRequestedQuit())
     {
         window->Update();
@@ -64,10 +72,11 @@ int main()
         {
             if (renderer->RecordFrame())
             {
+                renderGraph->AddPass(clearPass);
+
                 Rendering::Viewport viewport{};
                 renderer->BindViewport(viewport);
-                renderer->StartRender();
-                renderer->EndRender();
+                renderGraph->Execute(*renderer);
                 renderer->SubmitFrame();
             } else
             {

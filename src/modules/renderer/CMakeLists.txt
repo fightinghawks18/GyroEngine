@@ -40,6 +40,10 @@ add_library(RendererModule STATIC
         resources/shader.h
         utilities/shader.h
         resources/push_constant.h
+        rendering/rendergraph/render_graph.cpp
+        rendering/rendergraph/render_graph.h
+        rendering/rendergraph/render_pass.h
+        rendering/rendergraph/passes/clear_pass.h
 )
 
 set_target_properties(RendererModule

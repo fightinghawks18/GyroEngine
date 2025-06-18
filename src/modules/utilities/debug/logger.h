@@ -6,7 +6,7 @@
 
 #include <string>
 
-class Printer {
+class Logger {
 public:
     static void Log(const std::string& message);
     static void LogWarning(const std::string& message);

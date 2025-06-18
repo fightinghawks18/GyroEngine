@@ -21,7 +21,7 @@ namespace GyroEngine::Resources
         VkDescriptorType bindingType;
         uint32_t count;
         VkShaderStageFlags stage;
-        const VkSampler* immutableSamplers;
+        VkSampler* immutableSamplers;
     };
 
     class DescriptorLayout  {

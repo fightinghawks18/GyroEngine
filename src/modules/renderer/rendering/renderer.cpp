@@ -58,7 +58,7 @@ bool Renderer::Resize()
     if (!CreateCommandBuffers()) return false;
     if (!CreateSyncObjects()) return false;
 
-    Printer::Log("Recreated swapchain on frame " + std::to_string(m_currentFrame));
+    Logger::Log("Recreated swapchain on frame " + std::to_string(m_currentFrame));
     return true;
 }
 
@@ -105,26 +105,26 @@ bool Renderer::StartRecord()
     {
         if (!Resize())
         {
-            Printer::LogError("Failed to recreate swapchain");
+            Logger::LogError("Failed to recreate swapchain");
             return false;
         }
         m_needsRecreation = false;
     }
 
-    const VkResult waitResult = vkWaitForFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, 100000000);
+    VkResult waitResult = vkWaitForFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, 100000000);
     if (waitResult == VK_TIMEOUT)
     {
-        Printer::LogError("Fence timed out on frame index " + std::to_string(m_currentFrame));
+        Logger::LogError("Fence timed out on frame index " + std::to_string(m_currentFrame));
         return false;
     } if (waitResult != VK_SUCCESS)
     {
-        Printer::LogError("Failed to wait for fence: " + std::to_string(waitResult));
+        Logger::LogError("Failed to wait for fence: " + std::to_string(waitResult));
         return false;
     }
 
     vkResetFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
 
-    const VkResult imageAcquireResult = vkAcquireNextImageKHR(
+    VkResult imageAcquireResult = vkAcquireNextImageKHR(
         m_device.GetLogicalDevice(),
         m_swapchain,
         UINT64_MAX,
@@ -139,22 +139,22 @@ bool Renderer::StartRecord()
         || imageAcquireResult == VK_SUBOPTIMAL_KHR)
     {
         m_needsRecreation = true;
-        Printer::Log("Image acquire out of date or suboptimal, recreating on frame " + std::to_string((m_currentFrame + 1) % m_device.GetMaxFramesInFlight() ));
+        Logger::Log("Image acquire out of date or suboptimal, recreating on frame " + std::to_string((m_currentFrame + 1) % m_device.GetMaxFramesInFlight() ));
         return false;
     } if (imageAcquireResult != VK_SUCCESS)
     {
-        Printer::LogError("Failed to acquire swapchain image: " + std::to_string(imageAcquireResult));
+        Logger::LogError("Failed to acquire swapchain image: " + std::to_string(imageAcquireResult));
         return false;
     }
 
-    const VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
+    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
     {
-        Printer::LogError("Failed to begin command buffer recording");
+        Logger::LogError("Failed to begin command buffer recording");
         return false;
     }
 
@@ -196,10 +196,10 @@ void Renderer::PresentRender()
         || result == VK_SUBOPTIMAL_KHR)
     {
         m_needsRecreation = true;
-        Printer::Log("Swapchain out of date or suboptimal, recreating on frame " + std::to_string(m_currentFrame));
+        Logger::Log("Swapchain out of date or suboptimal, recreating on frame " + std::to_string(m_currentFrame));
     } else if (result != VK_SUCCESS)
     {
-        Printer::LogError("Failed to present swapchain image: " + std::to_string(result));
+        Logger::LogError("Failed to present swapchain image: " + std::to_string(result));
     }
 
     NextFrameIndex();
@@ -226,16 +226,16 @@ void Renderer::SubmitRender() const
 
     if (vkQueueSubmit(m_presentQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS)
     {
-        Printer::LogError("Failed to submit command buffer");
+        Logger::LogError("Failed to submit command buffer");
     }
 }
 
 void Renderer::EndRecord() const
 {
-    const VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
+    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
     {
-        Printer::LogError("Failed to end command buffer recording");
+        Logger::LogError("Failed to end command buffer recording");
     }
 }
 
@@ -244,12 +244,12 @@ bool Renderer::CreateSwapchain()
     // Query surface capabilities
     // ^ Ensures that moving to a different monitor with a different colorspace
     // ^ or requirements doesn't cause any problems
-    m_surfaceFormat = Utils::Renderer::chooseBestSurfaceFormat(m_device.GetPhysicalDevice(), m_surface);
+    m_surfaceFormat = Utils::Renderer::ChooseBestSurfaceFormat(m_device.GetPhysicalDevice(), m_surface);
     m_presentMode = Utils::Renderer::ChooseBestPresentMode(m_device.GetPhysicalDevice(), m_surface);
     m_swapchainImageFormat = m_surfaceFormat.format;
     m_swapchainExtent = Utils::Renderer::ChooseBestExtent(m_device.GetPhysicalDevice(), m_surface, m_window->GetWindowWidth(), m_window->GetWindowHeight());
 
-    const uint32_t minImageCount = Utils::Renderer::getMinImageCount(m_device.GetPhysicalDevice(), m_surface);
+    const uint32_t minImageCount = Utils::Renderer::GetMinImageCount(m_device.GetPhysicalDevice(), m_surface);
 
     VkSwapchainCreateInfoKHR swapchainInfo{};
     swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -270,7 +270,7 @@ bool Renderer::CreateSwapchain()
     VkSwapchainKHR newSwapchain = VK_NULL_HANDLE;
     if (vkCreateSwapchainKHR(m_device.GetLogicalDevice(), &swapchainInfo, nullptr, &newSwapchain) != VK_SUCCESS)
     {
-        Printer::LogError("Failed to create swapchain");
+        Logger::LogError("Failed to create swapchain");
         return false;
     }
 
@@ -317,7 +317,7 @@ bool Renderer::CreateSwapchainImages()
 
         if (vkCreateImageView(m_device.GetLogicalDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
         {
-            Printer::LogError("Failed to create image view");
+            Logger::LogError("Failed to create image view");
             return false;
         }
 
@@ -325,7 +325,7 @@ bool Renderer::CreateSwapchainImages()
 
         if (!image->Init(swapchainVkImages[i], imageView))
         {
-            Printer::LogError("Failed to initialize swapchain image");
+            Logger::LogError("Failed to initialize swapchain image");
             return false;
         }
 
@@ -360,17 +360,17 @@ bool Renderer::CreateImages()
 
         if (!colorImage->Init(VK_NULL_HANDLE, VK_NULL_HANDLE))
         {
-            Printer::LogError("Failed to create color image");
+            Logger::LogError("Failed to create color image");
             return false;
         }
         if (!depthImage->Init(VK_NULL_HANDLE, VK_NULL_HANDLE))
         {
-            Printer::LogError("Failed to create depth image");
+            Logger::LogError("Failed to create depth image");
             return false;
         }
         if (!pipelineImage->Init(VK_NULL_HANDLE, VK_NULL_HANDLE))
         {
-            Printer::LogError("Failed to create pipeline image");
+            Logger::LogError("Failed to create pipeline image");
             return false;
         }
 
@@ -393,7 +393,7 @@ bool Renderer::CreateSampler()
            .SetAnisotropy(false);
     if (!sampler->Init())
     {
-        Printer::LogError("Failed to create sampler");
+        Logger::LogError("Failed to create sampler");
         delete sampler;
         m_sampler = nullptr;
         return false;
@@ -414,7 +414,7 @@ bool Renderer::CreateCommandBuffers()
 
     if (vkAllocateCommandBuffers(m_device.GetLogicalDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
     {
-        Printer::LogError("Failed to allocate command buffers");
+        Logger::LogError("Failed to allocate command buffers");
         return false;
     }
     return true;
@@ -439,7 +439,7 @@ bool Renderer::CreateSyncObjects()
             vkCreateSemaphore(m_device.GetLogicalDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(m_device.GetLogicalDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
         {
-            Printer::LogError("Failed to create sync objects");
+            Logger::LogError("Failed to create sync objects");
             return false;
         }
     }

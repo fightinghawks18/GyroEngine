@@ -69,7 +69,7 @@ namespace GyroEngine::Resources
         VkResult result = vkCreateDescriptorPool(m_device.GetLogicalDevice(), &descriptorPoolInfo, nullptr, &m_descriptorPool);
         if (result != VK_SUCCESS)
         {
-            Printer::LogError("Failed to create descriptor pool");
+            Logger::LogError("Failed to create descriptor pool");
             return false;
         }
         return true;

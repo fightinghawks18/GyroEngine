@@ -2,7 +2,7 @@ find_package(glm CONFIG REQUIRED)
 
 add_library(UtilitiesModule STATIC
         tasks/maid.cpp
-        debug/printer.cpp
+        debug/Logger.cpp
         types.h
         utils.h
 )

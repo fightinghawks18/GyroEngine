@@ -8,7 +8,7 @@
 #include <vector>
 #include <SDL3/SDL_vulkan.h>
 
-#include "debug/printer.h"
+#include "debug/logger.h"
 
 namespace GyroEngine::Utils::Device
 {
@@ -82,7 +82,7 @@ namespace GyroEngine::Utils::Device
     }
 
     /// @note Returns a new vector containing only the supported device extensions from the provided list.
-    static std::vector<const char*> EnumerateVectorForSupportedDeviceExtensions(const VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
+    static std::vector<const char*> EnumerateVectorForSupportedDeviceExtensions(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
     {
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -92,7 +92,7 @@ namespace GyroEngine::Utils::Device
 
         if (availableExtensions.empty())
         {
-            Printer::LogError("No device extensions available");
+            Logger::LogError("No device extensions available");
             throw std::runtime_error("No device extensions available");
         }
 
@@ -111,13 +111,13 @@ namespace GyroEngine::Utils::Device
             }
             if (!found)
             {
-                Printer::LogWarning(requested + std::string(" is not supported by this device"));
+                Logger::LogWarning(requested + std::string(" is not supported by this device"));
             }
         }
 
         if (supportedExtensions.empty())
         {
-            Printer::LogError("No supported device extensions found");
+            Logger::LogError("No supported device extensions found");
             throw std::runtime_error("No supported device extensions found");
         }
 
@@ -135,7 +135,7 @@ namespace GyroEngine::Utils::Device
 
         if (availableExtensions.empty())
         {
-            Printer::LogError("No instance extensions available");
+            Logger::LogError("No instance extensions available");
             throw std::runtime_error("No instance extensions available");
         }
 
@@ -155,14 +155,14 @@ namespace GyroEngine::Utils::Device
             }
             if (!found)
             {
-                Printer::LogWarning(requested + std::string(" is not supported by this instance"));
+                Logger::LogWarning(requested + std::string(" is not supported by this instance"));
             }
         }
 
         // Check if any extensions were found
         if (supportedExtensions.empty())
         {
-            Printer::LogError("No supported instance extensions found");
+            Logger::LogError("No supported instance extensions found");
             throw std::runtime_error("No supported instance extensions found");
         }
 

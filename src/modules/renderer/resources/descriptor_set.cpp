@@ -9,13 +9,13 @@
 
 namespace GyroEngine::Resources
 {
-    DescriptorSet& DescriptorSet::SetLayout(const VkDescriptorSetLayout layout)
+    DescriptorSet& DescriptorSet::SetLayout(VkDescriptorSetLayout layout)
 {
     m_layout = layout;
     return *this;
 }
 
-DescriptorSet& DescriptorSet::SetPool(const VkDescriptorPool pool)
+DescriptorSet& DescriptorSet::SetPool(VkDescriptorPool pool)
 {
     m_descriptorPool = pool;
     return *this;
@@ -39,7 +39,7 @@ void DescriptorSet::Cleanup()
     }
 }
 
-void DescriptorSet::Bind(const Rendering::FrameContext& frameContext, const VkPipelineLayout layout) const
+void DescriptorSet::Bind(const Rendering::FrameContext& frameContext, VkPipelineLayout layout) const
 {
     if (m_descriptorSet != VK_NULL_HANDLE)
     {
@@ -48,7 +48,7 @@ void DescriptorSet::Bind(const Rendering::FrameContext& frameContext, const VkPi
     }
 }
 
-void DescriptorSet::UpdateBuffer(const uint32_t binding, const VkBuffer buffer, const VkDeviceSize offset, const VkDeviceSize range) const
+void DescriptorSet::UpdateBuffer(const uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
 {
     VkDescriptorBufferInfo descriptorBufferInfo = {};
     descriptorBufferInfo.buffer = buffer;
@@ -67,7 +67,7 @@ void DescriptorSet::UpdateBuffer(const uint32_t binding, const VkBuffer buffer, 
     vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-void DescriptorSet::UpdateImage(const uint32_t binding, const VkImageView view, const VkSampler sampler) const
+void DescriptorSet::UpdateImage(const uint32_t binding, VkImageView view, VkSampler sampler) const
 {
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.sampler = sampler;
@@ -97,7 +97,7 @@ bool DescriptorSet::CreateDescriptorSet()
     VkResult result = vkAllocateDescriptorSets(m_device.GetLogicalDevice(), &descriptorSetAllocateInfo, &m_descriptorSet);
     if (result != VK_SUCCESS)
     {
-        Printer::LogError("Failed to allocate descriptor sets");
+        Logger::LogError("Failed to allocate descriptor sets");
         return false;
     }
     return true;

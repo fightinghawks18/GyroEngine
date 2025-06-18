@@ -21,7 +21,7 @@ Pipeline& Pipeline::ClearConfig()
     return *this;
 }
 
-Pipeline& Pipeline::SetColorFormat(const VkFormat colorFormat)
+Pipeline& Pipeline::SetColorFormat(VkFormat colorFormat)
 {
     m_pipelineConfig.colorFormat = colorFormat;
     return *this;
@@ -82,7 +82,7 @@ void Pipeline::Bind(const Rendering::FrameContext& frameContext) const
 
 void Pipeline::DrawFullscreenQuad(const Rendering::FrameContext& frameContext) const
 {
-    const VkCommandBuffer cmd = frameContext.cmd;
+    VkCommandBuffer cmd = frameContext.cmd;
     if (m_pipelineConfig.inputAssemblyState.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
     {
         vkCmdDraw(cmd, 6, 1, 0, 0); // Draw quad as 2 triangles
@@ -141,7 +141,7 @@ bool Pipeline::BuildPipelineLayout()
     if (vkCreatePipelineLayout(m_device.GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) !=
         VK_SUCCESS)
     {
-        Printer::LogError("Failed to create pipeline layout");
+        Logger::LogError("Failed to create pipeline layout");
         return false;
     }
     return true;
@@ -298,7 +298,7 @@ bool Pipeline::BuildPipeline()
                                                 &m_pipeline);
     if (result != VK_SUCCESS)
     {
-        Printer::LogError("Failed to create pipeline");
+        Logger::LogError("Failed to create pipeline");
         return false;
     }
     return true;

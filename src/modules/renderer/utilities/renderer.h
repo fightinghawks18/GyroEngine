@@ -20,7 +20,7 @@
 namespace GyroEngine::Utils::Renderer
 {
     /// @note Queries the surface's capabilities to retrieve the minimum image count required
-    static uint32_t getMinImageCount(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    static uint32_t GetMinImageCount(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
@@ -28,7 +28,7 @@ namespace GyroEngine::Utils::Renderer
     }
 
     /// @note Queries the surface's capabilities to retrieve it's most suitable surface format
-    static VkSurfaceFormatKHR chooseBestSurfaceFormat(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    static VkSurfaceFormatKHR ChooseBestSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         uint32_t formatCount = 0;
 
@@ -52,27 +52,22 @@ namespace GyroEngine::Utils::Renderer
         return availableFormats[0]; // Fallback to the first available format
     }
 
-    static VkRenderingInfoKHR CreateRenderStruct(const VkExtent2D extent,
-        const uint32_t colorCount = 1,
-        uint32_t depthCount = 0)
+    static VkRenderingInfoKHR CreateRenderingInfo(const VkRect2D renderArea)
     {
         VkRenderingInfoKHR renderingInfo = {};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-        renderingInfo.flags = 0;
-        renderingInfo.renderArea.offset = { 0, 0 };
-        renderingInfo.renderArea.extent = extent;
-        renderingInfo.colorAttachmentCount = colorCount;
-        renderingInfo.pColorAttachments = nullptr; // Will be set later
-        renderingInfo.pDepthAttachment = nullptr; // Will be set later
-        renderingInfo.pStencilAttachment = nullptr; // Will be set later
-        renderingInfo.layerCount = 1; // Default to 1 layer
+        renderingInfo.pNext = nullptr;
+        renderingInfo.layerCount = 1;
+        renderingInfo.viewMask = 0;
+        renderingInfo.renderArea = renderArea;
+
         return renderingInfo;
     }
 
-    static VkRenderingAttachmentInfoKHR CreateRenderAttachment(const VkImageView imageView,
-        const VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        const VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        const VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    static VkRenderingAttachmentInfoKHR CreateRenderAttachment(VkImageView imageView,
+        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
     {
         VkRenderingAttachmentInfoKHR renderAttachment = {};
         renderAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
@@ -80,12 +75,16 @@ namespace GyroEngine::Utils::Renderer
         renderAttachment.imageLayout = layout;
         renderAttachment.loadOp = loadOp;
         renderAttachment.storeOp = storeOp;
-        renderAttachment.clearValue.color.float32[0] = 0.0f;
+        renderAttachment.clearValue = {};
+        renderAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        renderAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+        renderAttachment.resolveImageView = VK_NULL_HANDLE;
+        renderAttachment.pNext = nullptr;
         return renderAttachment;
     }
 
     /// @note Queries the surface's capabilities to retrieve the best present mode
-    static VkPresentModeKHR ChooseBestPresentMode(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
+    static VkPresentModeKHR ChooseBestPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         uint32_t presentCount = 0;
 
@@ -110,7 +109,7 @@ namespace GyroEngine::Utils::Renderer
     }
 
     /// @note Queries the surface's capabilities to retrieve the best extent
-    static VkExtent2D ChooseBestExtent(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface, const uint32_t width, const uint32_t height)
+    static VkExtent2D ChooseBestExtent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const uint32_t width, const uint32_t height)
     {
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -131,7 +130,7 @@ namespace GyroEngine::Utils::Renderer
     }
 
     /// @note Executes an action on a temporary command buffer
-    static void SubmitOneTimeCommand(const VkDevice device, const VkCommandPool commandPool, const VkQueue queue, const std::function<void(VkCommandBuffer)>& recordFunction)
+    static void SubmitOneTimeCommand(VkDevice device, VkCommandPool commandPool, VkQueue queue, const std::function<void(VkCommandBuffer)>& recordFunction)
     {
         VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

@@ -42,22 +42,22 @@ void RenderingDevice::Cleanup()
 void RenderingDevice::SetColorPreference(const PreferredColorFormatType preferredColorFormat)
 {
     const PreferredColorFormatType oldPreferredColor = m_preferredColorType;
-    const VkFormat oldFormat = m_colorFormat;
+    VkFormat oldFormat = m_colorFormat;
     m_preferredColorType = preferredColorFormat;
     if (!FindPreferredColorFormat())
     {
-        Printer::LogWarning("Fallback override, reusing previous format");
+        Logger::LogWarning("Fallback override, reusing previous format");
         m_colorFormat = oldFormat;
         m_preferredColorType = oldPreferredColor;
     }
 }
 
-void RenderingDevice::SetSwapchainColorFormat(const VkFormat swapchainColorFormat)
+void RenderingDevice::SetSwapchainColorFormat(VkFormat swapchainColorFormat)
 {
     m_swapchainColorFormat = swapchainColorFormat;
 }
 
-VkFormat RenderingDevice::QueryForSupportedColorFormat(const VkFormat format)
+VkFormat RenderingDevice::QueryForSupportedColorFormat(VkFormat format)
 {
     if (std::find(m_supportedColorFormats.begin(), m_supportedColorFormats.end(), format) != m_supportedColorFormats.end())
     {
@@ -66,7 +66,7 @@ VkFormat RenderingDevice::QueryForSupportedColorFormat(const VkFormat format)
     return m_supportedColorFormats[0];
 }
 
-VkFormat RenderingDevice::QueryForSupportedDepthFormat(const VkFormat format)
+VkFormat RenderingDevice::QueryForSupportedDepthFormat(VkFormat format)
 {
     if (std::find(m_supportedDepthFormats.begin(), m_supportedDepthFormats.end(), format) != m_supportedDepthFormats.end())
     {
@@ -81,13 +81,13 @@ VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Platform::Window *wi
     VkSurfaceKHR surface;
     if (!SDL_Vulkan_CreateSurface(sdlWindow, m_instance, nullptr, &surface))
     {
-        Printer::LogError(SDL_GetError());
+        Logger::LogError(SDL_GetError());
         return VK_NULL_HANDLE;
     }
     return surface;
 }
 
-DeviceQueue RenderingDevice::GetPresentQueueFromSurface(const VkSurfaceKHR surface) const
+DeviceQueue RenderingDevice::GetPresentQueueFromSurface(VkSurfaceKHR surface) const
 {
     uint32_t familyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &familyCount, nullptr);
@@ -175,11 +175,11 @@ bool RenderingDevice::SetupDebugMessenger()
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = &DebugMessengerCallback;
 
-    const VkResult result = vkCreateDebugUtilsMessengerEXT(
+    VkResult result = vkCreateDebugUtilsMessengerEXT(
         m_instance, &createInfo, nullptr, &m_debugMessenger);
     if (result != VK_SUCCESS)
     {
-        Printer::LogError("Failed to create debug messenger: " + std::to_string(result));
+        Logger::LogError("Failed to create debug messenger: " + std::to_string(result));
         return false;
     }
 
@@ -201,7 +201,7 @@ bool RenderingDevice::SelectPhysicalDevice()
 
     if (physicalDeviceCount == 0)
     {
-        Printer::LogError("No physical devices to pick from");
+        Logger::LogError("No physical devices to pick from");
         return false;
     }
 
@@ -238,7 +238,7 @@ bool RenderingDevice::SelectPhysicalDevice()
             }
             break;
         default:
-            Printer::LogError("Unknown or unsupported GPU type enumerated");
+            Logger::LogError("Unknown or unsupported GPU type enumerated");
             break;
         }
 
@@ -271,7 +271,7 @@ bool RenderingDevice::SelectPhysicalDevice()
 
     if (rankedDevices.empty())
     {
-        Printer::LogError("No supported physical devices found");
+        Logger::LogError("No supported physical devices found");
         return false;
     }
 
@@ -282,7 +282,7 @@ bool RenderingDevice::SelectPhysicalDevice()
         });
 
     m_physicalDevice = best->physicalDevice;
-    Printer::Log(std::string("Selected device: ") + best->properties.deviceName + " (score: " + std::to_string(best->score) + ")");
+    Logger::Log(std::string("Selected device: ") + best->properties.deviceName + " (score: " + std::to_string(best->score) + ")");
     return true;
 }
 
@@ -403,7 +403,7 @@ bool RenderingDevice::CreateLogicalDevice()
     VkResult result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_logicalDevice);
     if (result != VK_SUCCESS)
     {
-        Printer::LogError("Failed to create logical device");
+        Logger::LogError("Failed to create logical device");
         return false;
     }
 
@@ -460,13 +460,13 @@ bool RenderingDevice::CreateDeviceFamilies()
 
     if (m_deviceFamilies.queues.empty())
     {
-        Printer::LogError("No device queue familes found");
+        Logger::LogError("No device queue familes found");
         return false;
     }
 
     if (!m_deviceFamilies.GetGraphicsQueue().isValid())
     {
-        Printer::LogError("No graphics queue family found");
+        Logger::LogError("No graphics queue family found");
         return false;
     }
 
@@ -487,7 +487,7 @@ bool RenderingDevice::CreateAllocator()
     allocatorInfo.pVulkanFunctions = &vmaFuncs;
 
     if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS) {
-        Printer::LogError("Failed to create VMA allocator");
+        Logger::LogError("Failed to create VMA allocator");
         return false;
     }
 
@@ -506,7 +506,7 @@ bool RenderingDevice::CreateCommandPool()
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     if (vkCreateCommandPool(m_logicalDevice, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS)
     {
-        Printer::LogError("Failed to create command pool");
+        Logger::LogError("Failed to create command pool");
         return false;
     }
     m_maid.Add([&]
@@ -541,7 +541,7 @@ bool RenderingDevice::QueryAllSupportedColorFormats()
 
     if (m_supportedColorFormats.empty())
     {
-        Printer::LogError("No supported color formats found");
+        Logger::LogError("No supported color formats found");
         return false;
     }
     return true;
@@ -567,7 +567,7 @@ bool RenderingDevice::QueryAllSupportedDepthFormats()
 
     if (m_supportedDepthFormats.empty())
     {
-        Printer::LogError("No supported depth formats found");
+        Logger::LogError("No supported depth formats found");
         return false;
     }
     return true;
@@ -671,7 +671,7 @@ bool RenderingDevice::FindPreferredColorFormat()
     }
 
     m_colorFormat = m_supportedColorFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedColorFormats.front();
-    Printer::LogWarning("Attempt to find a suitable color format for type " + typeString + " failed. Using fallback format: " + std::to_string(m_colorFormat));
+    Logger::LogWarning("Attempt to find a suitable color format for type " + typeString + " failed. Using fallback format: " + std::to_string(m_colorFormat));
     return m_colorFormat != VK_FORMAT_UNDEFINED;
 }
 
@@ -696,7 +696,7 @@ VkBool32 RenderingDevice::DebugMessengerCallback(VkDebugUtilsMessageSeverityFlag
                                                  VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                                                  void *pUserData)
 {
-    Printer::Log("[VULKAN]: " + std::string(pCallbackData->pMessage));
+    Logger::Log("[VULKAN]: " + std::string(pCallbackData->pMessage));
     return VK_FALSE;
 }
 }

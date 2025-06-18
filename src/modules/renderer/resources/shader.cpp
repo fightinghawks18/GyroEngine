@@ -37,13 +37,13 @@ namespace GyroEngine::Resources
         std::vector<char> shaderSource = Utils::Shader::ReadShaderSPV(m_shaderPath);
         if (shaderSource.empty())
         {
-            Printer::LogError("Failed to read shader code: " + m_shaderPath);
+            Logger::LogError("Failed to read shader code: " + m_shaderPath);
             return false;
         }
 
         if (shaderSource.size() % 4 != 0)
         {
-            Printer::LogError("Shader code size is not a multiple of 4");
+            Logger::LogError("Shader code size is not a multiple of 4");
             return false;
         }
 
@@ -55,7 +55,7 @@ namespace GyroEngine::Resources
         VkResult result = vkCreateShaderModule(m_device.GetLogicalDevice(), &shaderModuleCreateInfo, nullptr, &m_shaderModule);
         if (result != VK_SUCCESS)
         {
-            Printer::LogError("Failed to create shader module: " + m_shaderPath);
+            Logger::LogError("Failed to create shader module: " + m_shaderPath);
             return false;
         }
         return true;

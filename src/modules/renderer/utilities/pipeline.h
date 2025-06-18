@@ -7,7 +7,6 @@
 #include "resources/pipeline.h"
 #include "resources/push_constant.h"
 
-// TODO: Finish pipeline helper
 namespace GyroEngine::Utils::Pipeline
 {
     struct PipelineInputAttribute
@@ -30,12 +29,12 @@ namespace GyroEngine::Utils::Pipeline
         std::vector<PipelineInputAttribute> inputAttributes;
         std::vector<PipelineInputBinding> inputBindings;
 
-        void addAttribute(const uint32_t binding, const uint32_t location, const uint32_t offset, const VkFormat format)
+        void addAttribute(const uint32_t binding, const uint32_t location, const uint32_t offset, VkFormat format)
         {
             inputAttributes.push_back({binding, location, offset, format});
         }
 
-        void addBinding(const uint32_t binding, const uint32_t stride, const VkVertexInputRate inputRate)
+        void addBinding(const uint32_t binding, const uint32_t stride, VkVertexInputRate inputRate)
         {
             inputBindings.push_back({binding, stride, inputRate});
         }

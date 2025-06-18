@@ -21,7 +21,7 @@ namespace GyroEngine::Resources
             m_size = size;
             return *this;
         }
-        PushConstant& SetStageFlags(const VkShaderStageFlags stageFlags) {
+        PushConstant& SetStageFlags(VkShaderStageFlags stageFlags) {
             m_stageFlags = stageFlags;
             return *this;
         }
@@ -39,7 +39,7 @@ namespace GyroEngine::Resources
             m_offset = offset;
         }
 
-        void Push(const VkCommandBuffer cmd, const VkPipelineLayout pipelineLayout) const
+        void Push(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout) const
         {
             vkCmdPushConstants(cmd, pipelineLayout, m_stageFlags, m_offset, m_size, m_data);
         }

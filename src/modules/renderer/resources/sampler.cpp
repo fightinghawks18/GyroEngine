@@ -8,31 +8,31 @@
 namespace GyroEngine::Resources
 {
 
-Sampler& Sampler::SetMinFilter(const VkFilter minFilter)
+Sampler& Sampler::SetMinFilter(VkFilter minFilter)
 {
     m_minFilter = minFilter;
     return *this;
 }
 
-Sampler& Sampler::SetMagFilter(const VkFilter magFilter)
+Sampler& Sampler::SetMagFilter(VkFilter magFilter)
 {
     m_magFilter = magFilter;
     return *this;
 }
 
-Sampler& Sampler::SetAddressModeU(const VkSamplerAddressMode modeU)
+Sampler& Sampler::SetAddressModeU(VkSamplerAddressMode modeU)
 {
     m_addressModeU = modeU;
     return *this;
 }
 
-Sampler& Sampler::SetAddressModeV(const VkSamplerAddressMode modeV)
+Sampler& Sampler::SetAddressModeV(VkSamplerAddressMode modeV)
 {
     m_addressModeV = modeV;
     return *this;
 }
 
-Sampler& Sampler::SetAddressModeW(const VkSamplerAddressMode modeW)
+Sampler& Sampler::SetAddressModeW(VkSamplerAddressMode modeW)
 {
     m_addressModeW = modeW;
     return *this;
@@ -68,7 +68,7 @@ Sampler& Sampler::SetAnisotropyLevel(const float level)
     return *this;
 }
 
-Sampler& Sampler::SetCompareOp(const VkCompareOp compareOp)
+Sampler& Sampler::SetCompareOp(VkCompareOp compareOp)
 {
     m_compareOp = compareOp;
     return *this;
@@ -95,7 +95,7 @@ void Sampler::Cleanup()
 bool Sampler::CreateSampler()
 {
     if (m_anisotropyEnable && m_anisotropyLevel > m_device.GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy) {
-        Printer::LogError("Anisotropy level exceeds device limits");
+        Logger::LogError("Anisotropy level exceeds device limits");
         return false;
     }
 
@@ -123,7 +123,7 @@ bool Sampler::CreateSampler()
     VkResult result = vkCreateSampler(m_device.GetLogicalDevice(), &samplerInfo, nullptr, &m_sampler);
     if (result != VK_SUCCESS)
     {
-        Printer::LogError("Failed to create sampler");
+        Logger::LogError("Failed to create sampler");
         return false;
     }
     return true;

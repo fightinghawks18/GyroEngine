@@ -55,7 +55,7 @@ namespace GyroEngine::Resources
         VkResult result = vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &m_descriptorSetLayout);
         if (result != VK_SUCCESS)
         {
-            Printer::LogError("Failed to create descriptor set layout");
+            Logger::LogError("Failed to create descriptor set layout");
             return false;
         }
         return true;
