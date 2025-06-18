@@ -6,12 +6,14 @@
 
 #include "context/rendering_device.h"
 
-Renderer::~Renderer()
+namespace GyroEngine::Rendering
+{
+    Renderer::~Renderer()
 {
     Cleanup();
 }
 
-bool Renderer::Init(Window* window)
+bool Renderer::Init(Platform::Window* window)
 {
     m_window = window;
     m_surface = m_device.CreateSurfaceFromWindow(m_window);
@@ -80,12 +82,12 @@ void Renderer::BindRenderingInfo(const VkRenderingInfoKHR &renderingInfo)
     m_renderingInfo = renderingInfo;
 }
 
-void Renderer::StartRender()
+void Renderer::StartRender() const
 {
     vkCmdBeginRenderingKHR(m_commandBuffers[m_currentFrame], &m_renderingInfo);
 }
 
-void Renderer::EndRender()
+void Renderer::EndRender() const
 {
     vkCmdEndRenderingKHR(m_commandBuffers[m_currentFrame]);
 }
@@ -109,7 +111,7 @@ bool Renderer::StartRecord()
         m_needsRecreation = false;
     }
 
-    VkResult waitResult = vkWaitForFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, 100000000);
+    const VkResult waitResult = vkWaitForFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, 100000000);
     if (waitResult == VK_TIMEOUT)
     {
         Printer::LogError("Fence timed out on frame index " + std::to_string(m_currentFrame));
@@ -122,7 +124,7 @@ bool Renderer::StartRecord()
 
     vkResetFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
 
-    VkResult imageAcquireResult = vkAcquireNextImageKHR(
+    const VkResult imageAcquireResult = vkAcquireNextImageKHR(
         m_device.GetLogicalDevice(),
         m_swapchain,
         UINT64_MAX,
@@ -145,7 +147,7 @@ bool Renderer::StartRecord()
         return false;
     }
 
-    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
+    const VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -203,11 +205,11 @@ void Renderer::PresentRender()
     NextFrameIndex();
 }
 
-void Renderer::SubmitRender()
+void Renderer::SubmitRender() const
 {
     m_swapchainImages[m_currentImageIndex]->MakePresent();
 
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    constexpr VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -228,9 +230,9 @@ void Renderer::SubmitRender()
     }
 }
 
-void Renderer::EndRecord()
+void Renderer::EndRecord() const
 {
-    VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
+    const VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
     {
         Printer::LogError("Failed to end command buffer recording");
@@ -242,12 +244,12 @@ bool Renderer::CreateSwapchain()
     // Query surface capabilities
     // ^ Ensures that moving to a different monitor with a different colorspace
     // ^ or requirements doesn't cause any problems
-    m_surfaceFormat = rendererutils::chooseBestSurfaceFormat(m_device.GetPhysicalDevice(), m_surface);
-    m_presentMode = rendererutils::ChooseBestPresentMode(m_device.GetPhysicalDevice(), m_surface);
+    m_surfaceFormat = Utils::Renderer::chooseBestSurfaceFormat(m_device.GetPhysicalDevice(), m_surface);
+    m_presentMode = Utils::Renderer::ChooseBestPresentMode(m_device.GetPhysicalDevice(), m_surface);
     m_swapchainImageFormat = m_surfaceFormat.format;
-    m_swapchainExtent = rendererutils::ChooseBestExtent(m_device.GetPhysicalDevice(), m_surface, m_window->GetWindowWidth(), m_window->GetWindowHeight());
+    m_swapchainExtent = Utils::Renderer::ChooseBestExtent(m_device.GetPhysicalDevice(), m_surface, m_window->GetWindowWidth(), m_window->GetWindowHeight());
 
-    uint32_t minImageCount = rendererutils::getMinImageCount(m_device.GetPhysicalDevice(), m_surface);
+    const uint32_t minImageCount = Utils::Renderer::getMinImageCount(m_device.GetPhysicalDevice(), m_surface);
 
     VkSwapchainCreateInfoKHR swapchainInfo{};
     swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -294,7 +296,7 @@ bool Renderer::CreateSwapchainImages()
 
     for (uint32_t i = 0; i < imageCount; ++i)
     {
-        auto image = new Image(m_device);
+        auto image = new Resources::Image(m_device);
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -337,9 +339,9 @@ bool Renderer::CreateImages()
 {
     for (uint32_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
     {
-        auto colorImage = new Image(m_device);
-        auto depthImage = new Image(m_device);
-        auto pipelineImage = new Image(m_device);
+        auto colorImage = new Resources::Image(m_device);
+        auto depthImage = new Resources::Image(m_device);
+        auto pipelineImage = new Resources::Image(m_device);
 
         colorImage->SetAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
             .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
@@ -381,7 +383,7 @@ bool Renderer::CreateImages()
 
 bool Renderer::CreateSampler()
 {
-    auto* sampler = new Sampler(m_device);
+    auto* sampler = new Resources::Sampler(m_device);
     sampler->SetMagFilter(VK_FILTER_LINEAR)
            .SetMinFilter(VK_FILTER_LINEAR)
            .SetAddressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT)
@@ -546,4 +548,5 @@ void Renderer::DestroySwapchain()
         vkDestroySwapchainKHR(m_device.GetLogicalDevice(), m_swapchain, nullptr);
         m_swapchain = VK_NULL_HANDLE;
     }
+}
 }

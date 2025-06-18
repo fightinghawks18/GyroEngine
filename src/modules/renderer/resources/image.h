@@ -4,24 +4,27 @@
 
 #pragma once
 
-#include <string>
 #include <volk.h>
 
-class RenderingDevice;
 #include "../implementation/vma_implementation.h"
 #include "utilities/device.h"
 
 #include "utilities/image.h"
-#include "utilities/renderer.h"
 
-class RenderingDevice;
+namespace GyroEngine::Device
+{
+    class RenderingDevice;
+}
+using namespace GyroEngine;
 
-class Image  {
+namespace GyroEngine::Resources
+{
+    class Image  {
 public:
-    explicit Image(RenderingDevice& device) : m_device(device) {}
+    explicit Image(Device::RenderingDevice& device) : m_device(device) {}
     ~Image() { Cleanup(); }
 
-    //static Image fromFile(RenderingDevice& device, const std::string& filePath);
+    //static Image fromFile(Device::RenderingDevice& device, const std::string& filePath);
 
     Image& SetFormat(VkFormat format);
     Image& SetExtent(VkExtent3D extent);
@@ -39,14 +42,14 @@ public:
     bool Init(VkImage externalImage = VK_NULL_HANDLE, VkImageView imageView = VK_NULL_HANDLE);
     void Cleanup();
 
-    void MakeColor(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MakeDepth(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MakeStencil(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MakePresent(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MakeTransferSrc(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MakeTransferDst(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MakeShaderReadable(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakeColor(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MakeDepth(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MakeStencil(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MakePresent(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MakeTransferSrc(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MakeTransferDst(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MakeShaderReadable(Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
+    void MoveToLayout(VkImageLayout newLayout, Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
     void CopyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
 
     [[nodiscard]] VkImage GetImage() const {
@@ -66,7 +69,7 @@ public:
         return m_extent;
     }
 private:
-    RenderingDevice& m_device;
+    Device::RenderingDevice& m_device;
 
     VkImage m_image = VK_NULL_HANDLE;
     VkImageView m_imageView = VK_NULL_HANDLE;
@@ -96,3 +99,5 @@ private:
     void DestroyImage();
     void DestroyImageView();
 };
+
+}

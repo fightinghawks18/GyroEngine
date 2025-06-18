@@ -6,7 +6,11 @@
 
 #include <vector>
 #include <volk.h>
-class RenderingDevice;
+namespace GyroEngine::Device
+{
+    class RenderingDevice;
+}
+using namespace GyroEngine;
 
 struct PoolSize
 {
@@ -14,31 +18,35 @@ struct PoolSize
     uint32_t maxSets;
 };
 
-class DescriptorPool  {
-public:
-    explicit DescriptorPool(RenderingDevice& device) : m_device(device) {}
-    ~DescriptorPool() { Cleanup(); }
+namespace GyroEngine::Resources
+{
+    class DescriptorPool  {
+    public:
+        explicit DescriptorPool(Device::RenderingDevice& device) : m_device(device) {}
+        ~DescriptorPool() { Cleanup(); }
 
-    DescriptorPool& SetPoolSize(const std::vector<PoolSize>& poolSizes);
-    DescriptorPool& AddPoolSize(PoolSize poolSize);
-    DescriptorPool& ClearPoolSizes();
+        DescriptorPool& SetPoolSize(const std::vector<PoolSize>& poolSizes);
+        DescriptorPool& AddPoolSize(PoolSize poolSize);
+        DescriptorPool& ClearPoolSizes();
 
-    DescriptorPool& SetMaxSets(uint32_t maxSets);
+        DescriptorPool& SetMaxSets(uint32_t maxSets);
 
-    bool Init();
-    void Cleanup();
+        bool Init();
+        void Cleanup();
 
-    [[nodiscard]] VkDescriptorPool GetDescriptorPool() const
-    {
-        return m_descriptorPool;
-    }
-private:
-    RenderingDevice& m_device;
+        [[nodiscard]] VkDescriptorPool GetDescriptorPool() const
+        {
+            return m_descriptorPool;
+        }
+    private:
+        Device::RenderingDevice& m_device;
 
-    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+        VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
 
-    uint32_t m_maxSets = 0;
-    std::vector<PoolSize> m_descriptorPoolSizes;
+        uint32_t m_maxSets = 0;
+        std::vector<PoolSize> m_descriptorPoolSizes;
 
-    bool CreateDescriptorPool();
-};
+        bool CreateDescriptorPool();
+    };
+
+}

@@ -6,9 +6,9 @@
 
 #include <volk.h>
 
-namespace imageutils
+namespace GyroEngine::Utils::Image
 {
-    static uint32_t GetSourceAccessMask(VkImageLayout src)
+    static uint32_t GetSourceAccessMask(const VkImageLayout src)
     {
         switch (src) {
             case VK_IMAGE_LAYOUT_UNDEFINED:
@@ -31,7 +31,7 @@ namespace imageutils
     }
 
 
-    static uint32_t GetDestinationAccessMask(VkImageLayout dst)
+    static uint32_t GetDestinationAccessMask(const VkImageLayout dst)
     {
         switch (dst) {
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
@@ -49,7 +49,7 @@ namespace imageutils
         }
     }
 
-    static VkPipelineStageFlags GetSourceStageFlags(VkImageLayout src)
+    static VkPipelineStageFlags GetSourceStageFlags(const VkImageLayout src)
     {
         switch (src) {
             case VK_IMAGE_LAYOUT_UNDEFINED:
@@ -70,7 +70,7 @@ namespace imageutils
         }
     }
 
-    static VkPipelineStageFlags GetDestinationStageFlags(VkImageLayout dst)
+    static VkPipelineStageFlags GetDestinationStageFlags(const VkImageLayout dst)
     {
         switch (dst) {
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:

@@ -5,244 +5,283 @@
 #pragma once
 
 #include <any>
-#include <map>
 #include <memory>
 
 #include "../../platform/window.h"
 #include "tasks/maid.h"
-#include "debug/printer.h"
 
 #include "implementation/volk_implementation.h"
 #include "implementation/vma_implementation.h"
-#include "resources/device_resource.h"
 #include "utilities/device.h"
 
-/// @brief GPU queue that is used for submitting rendering commands.
-struct DeviceQueue
+
+namespace GyroEngine::Device
 {
-    uint32_t family = 0;
-    deviceutils::QueueType type = deviceutils::QueueType::None;
-    VkQueue queue = VK_NULL_HANDLE;
-
-    [[nodiscard]] bool isValid() const {
-        return queue != VK_NULL_HANDLE;
-    }
-};
-
-/// @brief Collection of device queues for different operations.
-struct DeviceFamilies
-{
-    std::vector<DeviceQueue> queues;
-
-    [[nodiscard]] bool IsComplete() const
+    /// @brief GPU queue that is used for submitting rendering commands.
+    struct DeviceQueue
     {
-        for (const auto& queue : queues) {
-            if (!queue.isValid()) {
-                return false;
-            }
+        uint32_t family = 0;
+        Utils::Device::QueueType type = Utils::Device::QueueType::None;
+        VkQueue queue = VK_NULL_HANDLE;
+
+        [[nodiscard]] bool isValid() const
+        {
+            return queue != VK_NULL_HANDLE;
         }
-        return true;
-    }
+    };
 
-    [[nodiscard]] DeviceQueue GetQueue(const deviceutils::QueueType type) const
+    /// @brief Collection of device queues for different operations.
+    struct DeviceFamilies
     {
-        for (const auto& queue : queues) {
-            if (queue.type == type) {
-                return queue;
+        std::vector<DeviceQueue> queues;
+
+        [[nodiscard]] bool IsComplete() const
+        {
+            for (const auto &queue: queues)
+            {
+                if (!queue.isValid())
+                {
+                    return false;
+                }
             }
+            return true;
         }
-        return {};
-    }
 
-    [[nodiscard]] DeviceQueue GetGraphicsQueue() const
+        [[nodiscard]] DeviceQueue GetQueue(const Utils::Device::QueueType type) const
+        {
+            for (const auto &queue: queues)
+            {
+                if (queue.type == type)
+                {
+                    return queue;
+                }
+            }
+            return {};
+        }
+
+        [[nodiscard]] DeviceQueue GetGraphicsQueue() const
+        {
+            return GetQueue(Utils::Device::QueueType::Graphics);
+        }
+
+        [[nodiscard]] DeviceQueue GetComputeQueue() const
+        {
+            return GetQueue(Utils::Device::QueueType::Compute);
+        }
+
+        [[nodiscard]] DeviceQueue GetTransferQueue() const
+        {
+            return GetQueue(Utils::Device::QueueType::Transfer);
+        }
+
+        [[nodiscard]] DeviceQueue GetPresentQueue() const
+        {
+            return GetQueue(Utils::Device::QueueType::Present);
+        }
+    };
+
+    enum class PreferredColorFormatType
     {
-        return GetQueue(deviceutils::QueueType::Graphics);
-    }
+        sRGB,
+        uNORM,
+        HDR,
+        LINEAR,
+        COMPATIBLE,
+        DEFAULT
+    };
 
-    [[nodiscard]] DeviceQueue GetComputeQueue() const
+    /// @brief Encapsulates management of rendering objects and rendering operations.
+    class RenderingDevice
     {
-        return GetQueue(deviceutils::QueueType::Compute);
-    }
+    public:
+        RenderingDevice();
 
-    [[nodiscard]] DeviceQueue GetTransferQueue() const
-    {
-        return GetQueue(deviceutils::QueueType::Transfer);
-    }
+        ~RenderingDevice();
 
-    [[nodiscard]] DeviceQueue GetPresentQueue() const
-    {
-        return GetQueue(deviceutils::QueueType::Present);
-    }
-};
+        bool Init();
 
-enum class PreferredColorFormatType
-{
-    sRGB,
-    uNORM,
-    HDR,
-    LINEAR,
-    COMPATIBLE,
-    DEFAULT
-};
+        void Cleanup();
 
-/// @brief Encapsulates management of rendering objects and rendering operations.
-class RenderingDevice {
-public:
-    RenderingDevice();
-    ~RenderingDevice();
+        void AddCleanupTask(const std::function<void()> &task) { m_maid.Add(task); }
+        void AllowDiscrete(const bool allow = true) { m_acceptDiscrete = allow; }
+        void AllowIntegrated(const bool allow = true) { m_acceptIntegrated = allow; }
+        void AllowCPU(const bool allow = true) { m_acceptCPU = allow; }
+        void RequireTesselation(const bool require = true) { m_requiresTesselation = require; }
 
-    bool Init();
-    void Cleanup();
-    void AddCleanupTask(const std::function<void()> &task) { m_maid.Add(task); }
-    void AllowDiscrete(const bool allow = true) { m_acceptDiscrete = allow; }
-    void AllowIntegrated(const bool allow = true) { m_acceptIntegrated = allow; }
-    void AllowCPU(const bool allow = true) { m_acceptCPU = allow; }
-    void RequireTesselation(const bool require = true) { m_requiresTesselation = require; }
-    void WaitForIdle() const {
-        vkDeviceWaitIdle(m_logicalDevice);
-    }
+        void WaitForIdle() const
+        {
+            vkDeviceWaitIdle(m_logicalDevice);
+        }
 
-    void SetColorPreference(PreferredColorFormatType preferredColorFormat);
-    void SetSwapchainColorFormat(VkFormat swapchainColorFormat);
+        void SetColorPreference(PreferredColorFormatType preferredColorFormat);
 
-    VkFormat QueryForSupportedColorFormat(VkFormat format);
-    VkFormat QueryForSupportedDepthFormat(VkFormat format);
+        void SetSwapchainColorFormat(VkFormat swapchainColorFormat);
 
-    VkSurfaceKHR CreateSurfaceFromWindow(const Window* window) const;
-    DeviceQueue GetPresentQueueFromSurface(VkSurfaceKHR surface) const;
+        VkFormat QueryForSupportedColorFormat(VkFormat format);
 
-    [[nodiscard]] VkInstance GetInstance() const {
-        return m_instance;
-    }
+        VkFormat QueryForSupportedDepthFormat(VkFormat format);
 
-    [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const {
-        return m_physicalDevice;
-    }
+        VkSurfaceKHR CreateSurfaceFromWindow(const Platform::Window *window) const;
 
-    [[nodiscard]] VkPhysicalDeviceProperties GetPhysicalDeviceProperties() const
-    {
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
-        return properties;
-    }
+        DeviceQueue GetPresentQueueFromSurface(VkSurfaceKHR surface) const;
 
-    [[nodiscard]] VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures() const
-    {
-        VkPhysicalDeviceFeatures features;
-        vkGetPhysicalDeviceFeatures(m_physicalDevice, &features);
-        return features;
-    }
+        [[nodiscard]] VkInstance GetInstance() const
+        {
+            return m_instance;
+        }
 
-    [[nodiscard]] VkDevice GetLogicalDevice() const {
-        return m_logicalDevice;
-    }
+        [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const
+        {
+            return m_physicalDevice;
+        }
 
-    [[nodiscard]] VmaAllocator GetAllocator() const
-    {
-        return m_allocator;
-    }
+        [[nodiscard]] VkPhysicalDeviceProperties GetPhysicalDeviceProperties() const
+        {
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
+            return properties;
+        }
 
-    [[nodiscard]] VkCommandPool GetCommandPool() const {
-        return m_commandPool;
-    }
+        [[nodiscard]] VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures() const
+        {
+            VkPhysicalDeviceFeatures features;
+            vkGetPhysicalDeviceFeatures(m_physicalDevice, &features);
+            return features;
+        }
 
-    [[nodiscard]] VkFormat GetSwapchainFormat() const
-    {
-        return m_swapchainColorFormat;
-    }
+        [[nodiscard]] VkDevice GetLogicalDevice() const
+        {
+            return m_logicalDevice;
+        }
 
-    [[nodiscard]] VkFormat GetPreferredColorFormat() const
-    {
-        return m_colorFormat;
-    }
+        [[nodiscard]] VmaAllocator GetAllocator() const
+        {
+            return m_allocator;
+        }
 
-    [[nodiscard]] VkFormat GetPreferredDepthFormat() const
-    {
-        return m_depthFormat;
-    }
+        [[nodiscard]] VkCommandPool GetCommandPool() const
+        {
+            return m_commandPool;
+        }
 
-    [[nodiscard]] VkFormat GetPreferredStencilFormat() const
-    {
-        return m_stencilFormat;
-    }
+        [[nodiscard]] VkFormat GetSwapchainFormat() const
+        {
+            return m_swapchainColorFormat;
+        }
 
-    [[nodiscard]] const std::vector<VkFormat>& GetSupportedColorFormats() const {
-        return m_supportedColorFormats;
-    }
+        [[nodiscard]] VkFormat GetPreferredColorFormat() const
+        {
+            return m_colorFormat;
+        }
 
-    [[nodiscard]] const std::vector<VkFormat>& GetSupportedDepthFormats() const {
-        return m_supportedDepthFormats;
-    }
+        [[nodiscard]] VkFormat GetPreferredDepthFormat() const
+        {
+            return m_depthFormat;
+        }
 
-    [[nodiscard]] uint32_t GetMaxFramesInFlight() const {
-        return m_maxFramesInFlight;
-    }
+        [[nodiscard]] VkFormat GetPreferredStencilFormat() const
+        {
+            return m_stencilFormat;
+        }
 
-    [[nodiscard]] Maid& GetMaid() {
-        return m_maid;
-    }
+        [[nodiscard]] const std::vector<VkFormat> &GetSupportedColorFormats() const
+        {
+            return m_supportedColorFormats;
+        }
 
-    [[nodiscard]] DeviceFamilies& GetDeviceFamilies() {
-        return m_deviceFamilies;
-    }
-private:
-    // Device objects
+        [[nodiscard]] const std::vector<VkFormat> &GetSupportedDepthFormats() const
+        {
+            return m_supportedDepthFormats;
+        }
 
-    VkInstance m_instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    VkDevice m_logicalDevice = VK_NULL_HANDLE;
-    VmaAllocator m_allocator = VK_NULL_HANDLE;
-    VkCommandPool m_commandPool = VK_NULL_HANDLE;
-    DeviceFamilies m_deviceFamilies;
-    Maid m_maid;
+        [[nodiscard]] uint32_t GetMaxFramesInFlight() const
+        {
+            return m_maxFramesInFlight;
+        }
 
-    std::vector<VkFormat> m_supportedColorFormats;
-    std::vector<VkFormat> m_supportedDepthFormats;
+        [[nodiscard]] Maid &GetMaid()
+        {
+            return m_maid;
+        }
 
-    uint32_t m_maxFramesInFlight = 2;
-    PreferredColorFormatType m_preferredColorType = PreferredColorFormatType::sRGB;
-    VkFormat m_colorFormat = VK_FORMAT_UNDEFINED;
-    VkFormat m_swapchainColorFormat = VK_FORMAT_UNDEFINED;
-    VkFormat m_depthFormat = VK_FORMAT_UNDEFINED;
-    VkFormat m_stencilFormat = VK_FORMAT_UNDEFINED;
+        [[nodiscard]] DeviceFamilies &GetDeviceFamilies()
+        {
+            return m_deviceFamilies;
+        }
 
-    // Setup configuration
+    private:
+        // Device objects
 
-    bool m_requiresTesselation = false;
-    bool m_acceptDiscrete = true;
-    bool m_acceptIntegrated = true;
-    bool m_acceptCPU = true;
+        VkInstance m_instance = VK_NULL_HANDLE;
+        VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
+        VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+        VkDevice m_logicalDevice = VK_NULL_HANDLE;
+        VmaAllocator m_allocator = VK_NULL_HANDLE;
+        VkCommandPool m_commandPool = VK_NULL_HANDLE;
+        DeviceFamilies m_deviceFamilies;
+        Maid m_maid;
 
-    // Device setup/cleanup
+        std::vector<VkFormat> m_supportedColorFormats;
+        std::vector<VkFormat> m_supportedDepthFormats;
 
-    bool CreateInstance();
-    bool SetupDebugMessenger();
-    bool SelectPhysicalDevice();
-    bool CreateLogicalDevice();
-    bool CreateDeviceFamilies();
-    bool CreateAllocator();
-    bool CreateCommandPool();
-    bool QueryAllSupportedColorFormats();
-    bool QueryAllSupportedDepthFormats();
+        uint32_t m_maxFramesInFlight = 2;
+        PreferredColorFormatType m_preferredColorType = PreferredColorFormatType::sRGB;
+        VkFormat m_colorFormat = VK_FORMAT_UNDEFINED;
+        VkFormat m_swapchainColorFormat = VK_FORMAT_UNDEFINED;
+        VkFormat m_depthFormat = VK_FORMAT_UNDEFINED;
+        VkFormat m_stencilFormat = VK_FORMAT_UNDEFINED;
 
-    void DestroyCommandPool();
-    void DestroyAllocator();
-    void DestroyLogicalDevice();
-    void DestroyPhysicalDevice();
-    void DestroyDebugMessenger();
-    void DestroyInstance();
+        // Setup configuration
 
-    // Device format helpers
+        bool m_requiresTesselation;
+        bool m_acceptDiscrete;
+        bool m_acceptIntegrated;
+        bool m_acceptCPU;
 
-    bool FindPreferredColorFormat();
-    bool FindBestDepthFormat();
+        // Device setup/cleanup
 
-    // Device static helpers
+        bool CreateInstance();
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessengerCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData);
-};
+        bool SetupDebugMessenger();
+
+        bool SelectPhysicalDevice();
+
+        bool CreateLogicalDevice();
+
+        bool CreateDeviceFamilies();
+
+        bool CreateAllocator();
+
+        bool CreateCommandPool();
+
+        bool QueryAllSupportedColorFormats();
+
+        bool QueryAllSupportedDepthFormats();
+
+        void DestroyCommandPool();
+
+        void DestroyAllocator();
+
+        void DestroyLogicalDevice();
+
+        void DestroyPhysicalDevice();
+
+        void DestroyDebugMessenger();
+
+        void DestroyInstance();
+
+        // Device format helpers
+
+        bool FindPreferredColorFormat();
+
+        bool FindBestDepthFormat();
+
+        // Device static helpers
+
+        static VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessengerCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT messageType,
+            const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+            void *pUserData);
+    };
+}

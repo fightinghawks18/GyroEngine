@@ -11,10 +11,9 @@
 #include "window.h"
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
-#include "resources/push_constant.h"
-#include "resources/shader.h"
 #include "utilities/shader.h"
 
+using namespace GyroEngine;
 
 int main()
 {
@@ -24,33 +23,33 @@ int main()
         return -1;
     }
     // Compile shaders first
-    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/simple_object.vert",
+    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/simple_object.vert",
                                      shaderc_vertex_shader);
-    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/simple_object.frag",
+    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/simple_object.frag",
                                      shaderc_fragment_shader);
-    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/blur_h.frag",
+    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/blur_h.frag",
                                      shaderc_fragment_shader);
-    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/blur_v.frag",
+    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/blur_v.frag",
                                      shaderc_fragment_shader);
-    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/fullscreen_quad.vert",
+    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/fullscreen_quad.vert",
                                      shaderc_vertex_shader);
-    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/invert_color.frag",
+    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/invert_color.frag",
                                      shaderc_vertex_shader);
 
-    auto window = std::make_unique<Window>();
+    auto window = std::make_unique<Platform::Window>();
     if (!window->Init())
     {
         std::cerr << "Failed to create window." << std::endl;
         return -1;
     }
 
-    auto device = std::make_unique<RenderingDevice>();
+    auto device = std::make_unique<Device::RenderingDevice>();
     if (!device->Init())
     {
         std::cerr << "Failed to initialize rendering device." << std::endl;
         return -1;
     }
-    auto renderer = std::make_shared<Renderer>(*device);
+    auto renderer = std::make_shared<Rendering::Renderer>(*device);
     if (!renderer->Init(window.get()))
     {
         std::cerr << "Failed to initialize renderer." << std::endl;
@@ -65,7 +64,7 @@ int main()
         {
             if (renderer->RecordFrame())
             {
-                Viewport viewport{};
+                Rendering::Viewport viewport{};
                 renderer->BindViewport(viewport);
                 renderer->StartRender();
                 renderer->EndRender();

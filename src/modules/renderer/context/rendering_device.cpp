@@ -6,7 +6,9 @@
 
 #include <set>
 
-RenderingDevice::RenderingDevice() = default;
+namespace GyroEngine::Device
+{
+    RenderingDevice::RenderingDevice() = default;
 
 RenderingDevice::~RenderingDevice()
 {
@@ -37,10 +39,10 @@ void RenderingDevice::Cleanup()
     volkFinalize();
 }
 
-void RenderingDevice::SetColorPreference(PreferredColorFormatType preferredColorFormat)
+void RenderingDevice::SetColorPreference(const PreferredColorFormatType preferredColorFormat)
 {
-    PreferredColorFormatType oldPreferredColor = m_preferredColorType;
-    VkFormat oldFormat = m_colorFormat;
+    const PreferredColorFormatType oldPreferredColor = m_preferredColorType;
+    const VkFormat oldFormat = m_colorFormat;
     m_preferredColorType = preferredColorFormat;
     if (!FindPreferredColorFormat())
     {
@@ -50,12 +52,12 @@ void RenderingDevice::SetColorPreference(PreferredColorFormatType preferredColor
     }
 }
 
-void RenderingDevice::SetSwapchainColorFormat(VkFormat swapchainColorFormat)
+void RenderingDevice::SetSwapchainColorFormat(const VkFormat swapchainColorFormat)
 {
     m_swapchainColorFormat = swapchainColorFormat;
 }
 
-VkFormat RenderingDevice::QueryForSupportedColorFormat(VkFormat format)
+VkFormat RenderingDevice::QueryForSupportedColorFormat(const VkFormat format)
 {
     if (std::find(m_supportedColorFormats.begin(), m_supportedColorFormats.end(), format) != m_supportedColorFormats.end())
     {
@@ -64,7 +66,7 @@ VkFormat RenderingDevice::QueryForSupportedColorFormat(VkFormat format)
     return m_supportedColorFormats[0];
 }
 
-VkFormat RenderingDevice::QueryForSupportedDepthFormat(VkFormat format)
+VkFormat RenderingDevice::QueryForSupportedDepthFormat(const VkFormat format)
 {
     if (std::find(m_supportedDepthFormats.begin(), m_supportedDepthFormats.end(), format) != m_supportedDepthFormats.end())
     {
@@ -73,7 +75,7 @@ VkFormat RenderingDevice::QueryForSupportedDepthFormat(VkFormat format)
     return m_supportedDepthFormats[0];
 }
 
-VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Window *window) const
+VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Platform::Window *window) const
 {
     SDL_Window* sdlWindow = window->GetWindowHandle();
     VkSurfaceKHR surface;
@@ -85,7 +87,7 @@ VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Window *window) cons
     return surface;
 }
 
-DeviceQueue RenderingDevice::GetPresentQueueFromSurface(VkSurfaceKHR surface) const
+DeviceQueue RenderingDevice::GetPresentQueueFromSurface(const VkSurfaceKHR surface) const
 {
     uint32_t familyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &familyCount, nullptr);
@@ -100,7 +102,7 @@ DeviceQueue RenderingDevice::GetPresentQueueFromSurface(VkSurfaceKHR surface) co
         if (presentSupport)
         {
             DeviceQueue presentQueue;
-            presentQueue.type = deviceutils::QueueType::Present;
+            presentQueue.type = Utils::Device::QueueType::Present;
             presentQueue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &presentQueue.queue);
@@ -114,8 +116,8 @@ bool RenderingDevice::CreateInstance()
 {
     volkInitialize();
 
-    deviceutils::Extensions extensions = deviceutils::GetSDLExtensions();
-    extensions.extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    auto [extensionCount, extensions] = Utils::Device::GetSDLExtensions();
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     std::vector<const char*> validationLayers = {};
     validationLayers.push_back("VK_LAYER_KHRONOS_validation");
@@ -129,17 +131,17 @@ bool RenderingDevice::CreateInstance()
     appInfo.apiVersion = VK_API_VERSION_1_3;
     appInfo.pNext = nullptr;
 
-    const std::vector<const char*> supportedInstanceExtensions = deviceutils::enumerateVectorForSupportedInstanceExtensions(
-        extensions.extensions);
+    const std::vector<const char*> supportedInstanceExtensions = Utils::Device::enumerateVectorForSupportedInstanceExtensions(
+        extensions);
 
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
-    createInfo.enabledExtensionCount = supportedInstanceExtensions.size();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(supportedInstanceExtensions.size());
     createInfo.ppEnabledExtensionNames = supportedInstanceExtensions.data();
 
-    createInfo.enabledLayerCount = validationLayers.size();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
 
     createInfo.pNext = nullptr;
@@ -152,7 +154,7 @@ bool RenderingDevice::CreateInstance()
 
     volkLoadInstance(m_instance);
 
-    m_maid.Add([&]()
+    m_maid.Add([&]
     {
        DestroyInstance();
     });
@@ -173,7 +175,7 @@ bool RenderingDevice::SetupDebugMessenger()
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = &DebugMessengerCallback;
 
-    VkResult result = vkCreateDebugUtilsMessengerEXT(
+    const VkResult result = vkCreateDebugUtilsMessengerEXT(
         m_instance, &createInfo, nullptr, &m_debugMessenger);
     if (result != VK_SUCCESS)
     {
@@ -181,7 +183,7 @@ bool RenderingDevice::SetupDebugMessenger()
         return false;
     }
 
-    m_maid.Add([&]()
+    m_maid.Add([&]
     {
        DestroyDebugMessenger();
     });
@@ -203,7 +205,7 @@ bool RenderingDevice::SelectPhysicalDevice()
         return false;
     }
 
-    std::vector<deviceutils::RankedDevice> rankedDevices;
+    std::vector<Utils::Device::RankedDevice> rankedDevices;
 
     for (uint32_t i = 0; i < physicalDeviceCount; i++)
     {
@@ -274,8 +276,8 @@ bool RenderingDevice::SelectPhysicalDevice()
     }
 
     // Pick the device with the highest rank
-    auto best = std::max_element(rankedDevices.begin(), rankedDevices.end(),
-        [](const deviceutils::RankedDevice& a, const deviceutils::RankedDevice& b) {
+    const auto best = std::max_element(rankedDevices.begin(), rankedDevices.end(),
+        [](const Utils::Device::RankedDevice& a, const Utils::Device::RankedDevice& b) {
             return a.score < b.score;
         });
 
@@ -302,7 +304,7 @@ bool RenderingDevice::CreateLogicalDevice()
     }
     // Find dedicated compute family
     for (uint32_t i = 0; i < familyCount; ++i) {
-        if ((queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) &&
+        if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT &&
             !(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
             computeFamily = i;
             break;
@@ -319,7 +321,7 @@ bool RenderingDevice::CreateLogicalDevice()
     }
     // Find dedicated transfer family
     for (uint32_t i = 0; i < familyCount; ++i) {
-        if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) &&
+        if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT &&
             !(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
             !(queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT)) {
             transferFamily = i;
@@ -352,8 +354,8 @@ bool RenderingDevice::CreateLogicalDevice()
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    deviceutils::Extensions deviceExtensions;
-    deviceExtensions = deviceutils::CreateExtensions({
+    Utils::Device::Extensions deviceExtensions;
+    deviceExtensions = Utils::Device::CreateExtensions({
         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
         VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
@@ -387,12 +389,12 @@ bool RenderingDevice::CreateLogicalDevice()
     synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
     synchronization2Features.pNext = &indexingFeatures;
 
-    const std::vector<const char*> supportedDeviceExtensions = deviceutils::EnumerateVectorForSupportedDeviceExtensions(
+    const std::vector<const char*> supportedDeviceExtensions = Utils::Device::EnumerateVectorForSupportedDeviceExtensions(
         m_physicalDevice, deviceExtensions.extensions);
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.enabledExtensionCount = supportedDeviceExtensions.size();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(supportedDeviceExtensions.size());
     createInfo.ppEnabledExtensionNames = supportedDeviceExtensions.data();
     createInfo.pNext = &synchronization2Features;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -405,7 +407,7 @@ bool RenderingDevice::CreateLogicalDevice()
         return false;
     }
 
-    m_maid.Add([&]()
+    m_maid.Add([&]
     {
        DestroyLogicalDevice();
     });
@@ -426,19 +428,19 @@ bool RenderingDevice::CreateDeviceFamilies()
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !m_deviceFamilies.GetGraphicsQueue().isValid())
         {
             DeviceQueue queue{};
-            queue.type = deviceutils::QueueType::Graphics;
+            queue.type = Utils::Device::QueueType::Graphics;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
             m_deviceFamilies.queues.push_back(queue);
         }
 
-        if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) &&
+        if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT &&
         !(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
         !(queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT))
             {
             DeviceQueue queue{};
-            queue.type = deviceutils::QueueType::Transfer;
+            queue.type = Utils::Device::QueueType::Transfer;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
@@ -448,7 +450,7 @@ bool RenderingDevice::CreateDeviceFamilies()
         if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT && !m_deviceFamilies.GetComputeQueue().isValid())
         {
             DeviceQueue queue{};
-            queue.type = deviceutils::QueueType::Compute;
+            queue.type = Utils::Device::QueueType::Compute;
             queue.family = i;
 
             vkGetDeviceQueue(m_logicalDevice, i, 0, &queue.queue);
@@ -489,7 +491,7 @@ bool RenderingDevice::CreateAllocator()
         return false;
     }
 
-    m_maid.Add([&]() {
+    m_maid.Add([&] {
         DestroyAllocator();
     });
 
@@ -507,7 +509,7 @@ bool RenderingDevice::CreateCommandPool()
         Printer::LogError("Failed to create command pool");
         return false;
     }
-    m_maid.Add([&]()
+    m_maid.Add([&]
     {
        DestroyCommandPool();
     });
@@ -516,7 +518,7 @@ bool RenderingDevice::CreateCommandPool()
 
 bool RenderingDevice::QueryAllSupportedColorFormats()
 {
-    std::vector availableColorFormats = {
+    const std::vector availableColorFormats = {
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_B8G8R8A8_UNORM,
         VK_FORMAT_R8G8B8A8_SRGB,
@@ -547,7 +549,7 @@ bool RenderingDevice::QueryAllSupportedColorFormats()
 
 bool RenderingDevice::QueryAllSupportedDepthFormats()
 {
-    std::vector availableDepthFormats = {
+    const std::vector availableDepthFormats = {
         VK_FORMAT_D24_UNORM_S8_UINT,
         VK_FORMAT_D32_SFLOAT_S8_UINT
     };
@@ -685,7 +687,7 @@ bool RenderingDevice::FindBestDepthFormat()
     }
 
     // Fallback to the first supported format
-    m_depthFormat = m_supportedDepthFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedDepthFormats.front();;
+    m_depthFormat = m_supportedDepthFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedDepthFormats.front();
     m_stencilFormat = m_depthFormat;
     return m_depthFormat != VK_FORMAT_UNDEFINED;
 }
@@ -696,4 +698,5 @@ VkBool32 RenderingDevice::DebugMessengerCallback(VkDebugUtilsMessageSeverityFlag
 {
     Printer::Log("[VULKAN]: " + std::string(pCallbackData->pMessage));
     return VK_FALSE;
+}
 }

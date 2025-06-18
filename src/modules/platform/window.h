@@ -10,44 +10,47 @@
 #include <SDL3/SDL_vulkan.h>
 
 
-class Window {
-public:
-    Window();
-    ~Window();
+namespace GyroEngine::Platform
+{
+    class Window {
+    public:
+        Window();
+        ~Window();
 
-    bool Init();
-    void Destroy();
+        bool Init();
+        void Destroy();
 
-    void Update();
+        void Update();
 
-    [[nodiscard]] bool IsWindowAlive() const {
-        return m_window != nullptr;
-    }
+        [[nodiscard]] bool IsWindowAlive() const {
+            return m_window != nullptr;
+        }
 
-    [[nodiscard]] bool HasRequestedQuit() const {
-        return m_requestedQuit;
-    }
+        [[nodiscard]] bool HasRequestedQuit() const {
+            return m_requestedQuit;
+        }
 
-    [[nodiscard]] bool IsFullscreen() const {
-        return SDL_GetWindowFlags(m_window) & SDL_WINDOW_FULLSCREEN;
-    }
+        [[nodiscard]] bool IsFullscreen() const {
+            return SDL_GetWindowFlags(m_window) & SDL_WINDOW_FULLSCREEN;
+        }
 
-    [[nodiscard]] SDL_Window* GetWindowHandle() const {
-        return m_window;
-    }
+        [[nodiscard]] SDL_Window* GetWindowHandle() const {
+            return m_window;
+        }
 
-    [[nodiscard]] uint32_t GetWindowWidth() const {
-        int width, height;
-        SDL_GetWindowSize(m_window, &width, &height);
-        return static_cast<uint32_t>(width);
-    }
+        [[nodiscard]] uint32_t GetWindowWidth() const {
+            int width, height;
+            SDL_GetWindowSize(m_window, &width, &height);
+            return static_cast<uint32_t>(width);
+        }
 
-    [[nodiscard]] uint32_t GetWindowHeight() const {
-        int width, height;
-        SDL_GetWindowSize(m_window, &width, &height);
-        return static_cast<uint32_t>(height);
-    }
-private:
-    SDL_Window* m_window = nullptr;
-    bool m_requestedQuit = false;
-};
+        [[nodiscard]] uint32_t GetWindowHeight() const {
+            int width, height;
+            SDL_GetWindowSize(m_window, &width, &height);
+            return static_cast<uint32_t>(height);
+        }
+    private:
+        SDL_Window* m_window;
+        bool m_requestedQuit = false;
+    };
+}

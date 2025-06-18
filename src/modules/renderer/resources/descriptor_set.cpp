@@ -7,13 +7,15 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
-DescriptorSet& DescriptorSet::SetLayout(VkDescriptorSetLayout layout)
+namespace GyroEngine::Resources
+{
+    DescriptorSet& DescriptorSet::SetLayout(const VkDescriptorSetLayout layout)
 {
     m_layout = layout;
     return *this;
 }
 
-DescriptorSet& DescriptorSet::SetPool(VkDescriptorPool pool)
+DescriptorSet& DescriptorSet::SetPool(const VkDescriptorPool pool)
 {
     m_descriptorPool = pool;
     return *this;
@@ -37,7 +39,7 @@ void DescriptorSet::Cleanup()
     }
 }
 
-void DescriptorSet::Bind(const FrameContext& frameContext, VkPipelineLayout layout)
+void DescriptorSet::Bind(const Rendering::FrameContext& frameContext, const VkPipelineLayout layout) const
 {
     if (m_descriptorSet != VK_NULL_HANDLE)
     {
@@ -46,7 +48,7 @@ void DescriptorSet::Bind(const FrameContext& frameContext, VkPipelineLayout layo
     }
 }
 
-void DescriptorSet::UpdateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
+void DescriptorSet::UpdateBuffer(const uint32_t binding, const VkBuffer buffer, const VkDeviceSize offset, const VkDeviceSize range) const
 {
     VkDescriptorBufferInfo descriptorBufferInfo = {};
     descriptorBufferInfo.buffer = buffer;
@@ -65,7 +67,7 @@ void DescriptorSet::UpdateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize
     vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-void DescriptorSet::UpdateImage(uint32_t binding, VkImageView view, VkSampler sampler) const
+void DescriptorSet::UpdateImage(const uint32_t binding, const VkImageView view, const VkSampler sampler) const
 {
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.sampler = sampler;
@@ -99,4 +101,5 @@ bool DescriptorSet::CreateDescriptorSet()
         return false;
     }
     return true;
+}
 }

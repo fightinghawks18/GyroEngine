@@ -7,31 +7,33 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
-Buffer& Buffer::SetBufferType(const BufferType& bufferType)
+namespace GyroEngine::Resources
+{
+    Buffer& Buffer::SetBufferType(const BufferType& bufferType)
 {
     m_bufferType = bufferType;
     return *this;
 }
 
-Buffer& Buffer::SetSize(VkDeviceSize size)
+Buffer& Buffer::SetSize(const VkDeviceSize size)
 {
     m_size = size;
     return *this;
 }
 
-Buffer& Buffer::SetUsage(VkBufferUsageFlags usage)
+Buffer& Buffer::SetUsage(const VkBufferUsageFlags usage)
 {
     m_usage = usage;
     return *this;
 }
 
-Buffer& Buffer::SetMemoryUsage(VmaMemoryUsage memoryUsage)
+Buffer& Buffer::SetMemoryUsage(const VmaMemoryUsage memoryUsage)
 {
     m_memoryUsage = memoryUsage;
     return *this;
 }
 
-Buffer& Buffer::SetSharingMode(VkSharingMode sharingMode)
+Buffer& Buffer::SetSharingMode(const VkSharingMode sharingMode)
 {
     m_sharingMode = sharingMode;
     return *this;
@@ -51,13 +53,13 @@ void Buffer::Cleanup()
     DestroyBuffer();
 }
 
-void Buffer::Bind(const FrameContext& frameContext) const
+void Buffer::Bind(const Rendering::FrameContext& frameContext) const
 {
     switch (m_bufferType)
     {
     case BufferType::Vertex:
         {
-            VkDeviceSize offsets[] = {0};
+            constexpr VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(frameContext.cmd, 0, 1, &m_buffer, offsets);
         }
         break;
@@ -69,7 +71,7 @@ void Buffer::Bind(const FrameContext& frameContext) const
     }
 }
 
-void Buffer::Map(const void* data)
+void Buffer::Map(const void* data) const
 {
     if (m_allocation != VK_NULL_HANDLE)
     {
@@ -97,10 +99,10 @@ bool Buffer::CreateBuffer()
     // Only set queue family indices if using concurrent sharing mode
     if (m_sharingMode == VK_SHARING_MODE_CONCURRENT)
     {
-        auto& families = m_device.GetDeviceFamilies();
+        const auto& families = m_device.GetDeviceFamilies();
         uint32_t indices[] = {families.GetGraphicsQueue().family, families.GetTransferQueue().family};
         uint32_t count = 0;
-        for (uint32_t index : indices)
+        for (const uint32_t index : indices)
         {
             if (index != VK_QUEUE_FAMILY_IGNORED)
             {
@@ -133,4 +135,5 @@ void Buffer::DestroyBuffer()
         m_buffer = VK_NULL_HANDLE;
         m_allocation = VK_NULL_HANDLE;
     }
+}
 }

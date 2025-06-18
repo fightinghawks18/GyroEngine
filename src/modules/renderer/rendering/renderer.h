@@ -12,36 +12,42 @@
 #include "resources/image.h"
 #include "resources/sampler.h"
 
-class RenderingDevice;
+namespace GyroEngine::Device
+{
+    class RenderingDevice;
+}
+using namespace GyroEngine;
 
-struct FrameContext
+namespace GyroEngine::Rendering
+{
+    struct FrameContext
 {
     VkCommandBuffer cmd;
 
     uint32_t imageIndex;
     uint32_t frameIndex;
 
-    Image* swapchainImage;
+    Resources::Image* swapchainImage;
     VkExtent2D swapchainExtent;
 
-    Sampler* sampler;
+    Resources::Sampler* sampler;
 
-    Image* colorImage;
-    Image* depthImage;
-    std::vector<Image*> pipelineImages;
+    Resources::Image* colorImage;
+    Resources::Image* depthImage;
+    std::vector<Resources::Image*> pipelineImages;
 
     Viewport viewport;
 };
 
 class Renderer {
 public:
-    explicit Renderer(RenderingDevice& device) : m_device(device)
+    explicit Renderer(Device::RenderingDevice& device) : m_device(device)
     {
     }
 
     ~Renderer();
 
-    bool Init(Window* window);
+    bool Init(Platform::Window* window);
     void Cleanup();
 
     bool Resize();
@@ -50,8 +56,8 @@ public:
     bool RecordFrame();
     void BindViewport(const Viewport& viewport);
     void BindRenderingInfo(const VkRenderingInfoKHR &renderingInfo);
-    void StartRender();
-    void EndRender();
+    void StartRender() const;
+    void EndRender() const;
     void SubmitFrame();
 
     [[nodiscard]] VkFormat GetSwapchainColorFormat() const
@@ -74,13 +80,13 @@ public:
         return m_frameContext;
     }
 
-    [[nodiscard]] std::vector<Image*>& GetPipelineImages()
+    [[nodiscard]] std::vector<Resources::Image*>& GetPipelineImages()
     {
         return m_pipelineImages;
     }
 private:
-    RenderingDevice& m_device;
-    Window* m_window = nullptr;
+    Device::RenderingDevice& m_device;
+    Platform::Window* m_window = nullptr;
 
     VkRenderingInfoKHR m_renderingInfo = {};
 
@@ -91,12 +97,12 @@ private:
     VkSurfaceFormatKHR m_surfaceFormat = {};
     VkExtent2D m_swapchainExtent = {};
     VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    std::vector<Image*> m_swapchainImages = {};
-    std::vector<Image*> m_colorImages = {};
-    std::vector<Image*> m_depthImages = {};
-    std::vector<Image*> m_pipelineImages = {};
+    std::vector<Resources::Image*> m_swapchainImages = {};
+    std::vector<Resources::Image*> m_colorImages = {};
+    std::vector<Resources::Image*> m_depthImages = {};
+    std::vector<Resources::Image*> m_pipelineImages = {};
 
-    Sampler* m_sampler = nullptr;
+    Resources::Sampler* m_sampler = nullptr;
 
     std::vector<VkSemaphore> m_imageAvailableSemaphores = {};
     std::vector<VkSemaphore> m_renderFinishedSemaphores = {};
@@ -112,8 +118,8 @@ private:
 
     bool StartRecord();
     void PresentRender();
-    void SubmitRender();
-    void EndRecord();
+    void SubmitRender() const;
+    void EndRecord() const;
 
     bool CreateSwapchain();
     bool CreateSwapchainImages();
@@ -129,3 +135,4 @@ private:
     void DestroyImages();
     void DestroySwapchain();
 };
+}

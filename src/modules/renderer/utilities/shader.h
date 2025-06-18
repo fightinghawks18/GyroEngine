@@ -11,10 +11,9 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
-#include <volk.h>
 #include <shaderc/shaderc.hpp>
 
-namespace shaderutils
+namespace GyroEngine::Utils::Shader
 {
     enum class ShaderType
     {
@@ -28,7 +27,7 @@ namespace shaderutils
             throw std::runtime_error("Failed to open shader file: " + filePath);
         }
 
-        size_t fileSize = static_cast<size_t>(file.tellg());
+        const size_t fileSize = file.tellg();
         std::vector<char> buffer(fileSize);
 
         file.seekg(0);
@@ -51,13 +50,13 @@ namespace shaderutils
         return buffer.str();
     }
 
-    inline std::vector<uint32_t> CompileShader(const std::string& source, shaderc_shader_kind kind) {
-        std::string shaderSource = ReadShaderSource(source);
+    inline std::vector<uint32_t> CompileShader(const std::string& source, const shaderc_shader_kind kind) {
+        const std::string shaderSource = ReadShaderSource(source);
 
-        shaderc::Compiler compiler;
+        const shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
-        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shaderSource, kind, "shader");
+        const shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shaderSource, kind, "shader");
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
             throw std::runtime_error("Shader compilation failed: " + result.GetErrorMessage());
         }
@@ -65,18 +64,18 @@ namespace shaderutils
         return {result.cbegin(), result.cend()};
     }
 
-    inline void CompileShaderToFile(const std::string& sourcePath, shaderc_shader_kind kind) {
-        std::string shaderSource = ReadShaderSource(sourcePath);
+    inline void CompileShaderToFile(const std::string& sourcePath, const shaderc_shader_kind kind) {
+        const std::string shaderSource = ReadShaderSource(sourcePath);
 
-        shaderc::Compiler compiler;
+        const shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
-        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shaderSource, kind, "shader");
+        const shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shaderSource, kind, "shader");
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
             throw std::runtime_error("Shader compilation failed: " + result.GetErrorMessage());
         }
 
-        std::string outputPath = sourcePath + ".spv";
+        const std::string outputPath = sourcePath + ".spv";
         std::ofstream outFile(outputPath, std::ios::binary);
         if (!outFile.is_open()) {
             throw std::runtime_error("Failed to create output file: " + outputPath);

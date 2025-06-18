@@ -7,37 +7,44 @@
 #include <vector>
 #include <volk.h>
 
-class RenderingDevice;
-
-struct LayoutBinding
+namespace GyroEngine::Device
 {
-    uint32_t binding;
-    VkDescriptorType bindingType;
-    uint32_t count;
-    VkShaderStageFlags stage;
-    const VkSampler* immutableSamplers;
-};
+    class RenderingDevice;
+}
+using namespace GyroEngine;
 
-class DescriptorLayout  {
-public:
-    explicit DescriptorLayout(RenderingDevice& device): m_device(device) {}
-    ~DescriptorLayout() { Cleanup(); }
-
-    DescriptorLayout& AddBinding(LayoutBinding binding);
-    DescriptorLayout& ClearBindings();
-
-    bool Init();
-    void Cleanup();
-
-    [[nodiscard]] VkDescriptorSetLayout GetDescriptorSetLayout() const
+namespace GyroEngine::Resources
+{
+    struct LayoutBinding
     {
-        return m_descriptorSetLayout;
-    }
-private:
-    RenderingDevice& m_device;
+        uint32_t binding;
+        VkDescriptorType bindingType;
+        uint32_t count;
+        VkShaderStageFlags stage;
+        const VkSampler* immutableSamplers;
+    };
 
-    VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
-    std::vector<LayoutBinding> m_descriptorSetLayoutBindings;
+    class DescriptorLayout  {
+    public:
+        explicit DescriptorLayout(Device::RenderingDevice& device): m_device(device) {}
+        ~DescriptorLayout() { Cleanup(); }
 
-    bool CreateDescriptorSetLayout();
-};
+        DescriptorLayout& AddBinding(const LayoutBinding &binding);
+        DescriptorLayout& ClearBindings();
+
+        bool Init();
+        void Cleanup();
+
+        [[nodiscard]] VkDescriptorSetLayout GetDescriptorSetLayout() const
+        {
+            return m_descriptorSetLayout;
+        }
+    private:
+        Device::RenderingDevice& m_device;
+
+        VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+        std::vector<LayoutBinding> m_descriptorSetLayoutBindings;
+
+        bool CreateDescriptorSetLayout();
+    };
+}

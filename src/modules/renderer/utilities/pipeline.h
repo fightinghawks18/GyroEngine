@@ -5,9 +5,10 @@
 #pragma once
 #include "rendering/viewport.h"
 #include "resources/pipeline.h"
+#include "resources/push_constant.h"
 
 // TODO: Finish pipeline helper
-namespace pipelineutils
+namespace GyroEngine::Utils::Pipeline
 {
     struct PipelineInputAttribute
     {
@@ -29,12 +30,12 @@ namespace pipelineutils
         std::vector<PipelineInputAttribute> inputAttributes;
         std::vector<PipelineInputBinding> inputBindings;
 
-        void addAttribute(uint32_t binding, uint32_t location, uint32_t offset, VkFormat format)
+        void addAttribute(const uint32_t binding, const uint32_t location, const uint32_t offset, const VkFormat format)
         {
             inputAttributes.push_back({binding, location, offset, format});
         }
 
-        void addBinding(uint32_t binding, uint32_t stride, VkVertexInputRate inputRate)
+        void addBinding(const uint32_t binding, const uint32_t stride, const VkVertexInputRate inputRate)
         {
             inputBindings.push_back({binding, stride, inputRate});
         }
@@ -128,7 +129,7 @@ namespace pipelineutils
         PipelineMultisampleState multisampleState{};
         PipelineColorBlendState colorBlendState{};
         PipelineBlendState blendState{};
-        std::vector<PushConstant*> pushConstants{};
+        std::vector<Resources::PushConstant*> pushConstants{};
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkFormat colorFormat = VK_FORMAT_UNDEFINED;
     };

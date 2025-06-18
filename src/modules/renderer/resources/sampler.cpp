@@ -5,67 +5,70 @@
 #include "sampler.h"
 #include "context/rendering_device.h"
 
-Sampler& Sampler::SetMinFilter(VkFilter minFilter)
+namespace GyroEngine::Resources
+{
+
+Sampler& Sampler::SetMinFilter(const VkFilter minFilter)
 {
     m_minFilter = minFilter;
     return *this;
 }
 
-Sampler& Sampler::SetMagFilter(VkFilter magFilter)
+Sampler& Sampler::SetMagFilter(const VkFilter magFilter)
 {
     m_magFilter = magFilter;
     return *this;
 }
 
-Sampler& Sampler::SetAddressModeU(VkSamplerAddressMode modeU)
+Sampler& Sampler::SetAddressModeU(const VkSamplerAddressMode modeU)
 {
     m_addressModeU = modeU;
     return *this;
 }
 
-Sampler& Sampler::SetAddressModeV(VkSamplerAddressMode modeV)
+Sampler& Sampler::SetAddressModeV(const VkSamplerAddressMode modeV)
 {
     m_addressModeV = modeV;
     return *this;
 }
 
-Sampler& Sampler::SetAddressModeW(VkSamplerAddressMode modeW)
+Sampler& Sampler::SetAddressModeW(const VkSamplerAddressMode modeW)
 {
     m_addressModeW = modeW;
     return *this;
 }
 
-Sampler& Sampler::SetMipLodBias(float bias)
+Sampler& Sampler::SetMipLodBias(const float bias)
 {
     m_mipLodBias = bias;
     return *this;
 }
 
-Sampler& Sampler::SetMinLod(float minLod)
+Sampler& Sampler::SetMinLod(const float minLod)
 {
     m_minLod = minLod;
     return *this;
 }
 
-Sampler& Sampler::SetMaxLod(float maxLod)
+Sampler& Sampler::SetMaxLod(const float maxLod)
 {
     m_maxLod = maxLod;
     return *this;
 }
 
-Sampler& Sampler::SetAnisotropy(bool enable)
+Sampler& Sampler::SetAnisotropy(const bool enable)
 {
     m_anisotropyEnable = enable;
     return *this;
 }
 
-Sampler& Sampler::SetAnisotropyLevel(float level)
+Sampler& Sampler::SetAnisotropyLevel(const float level)
 {
     m_anisotropyLevel = level;
     return *this;
 }
 
-Sampler& Sampler::SetCompareOp(VkCompareOp compareOp)
+Sampler& Sampler::SetCompareOp(const VkCompareOp compareOp)
 {
     m_compareOp = compareOp;
     return *this;
@@ -124,4 +127,5 @@ bool Sampler::CreateSampler()
         return false;
     }
     return true;
+}
 }

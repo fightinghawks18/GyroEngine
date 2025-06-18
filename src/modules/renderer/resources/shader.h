@@ -7,32 +7,39 @@
 #include <string>
 #include <volk.h>
 #include "utilities/shader.h"
-class RenderingDevice;
+namespace GyroEngine::Device
+{
+    class RenderingDevice;
+}
+using namespace GyroEngine;
 
-class Shader  {
-public:
-    explicit Shader(RenderingDevice& device): m_device(device) {}
-    ~Shader() { Cleanup(); }
+namespace GyroEngine::Resources
+{
+    class Shader {
+    public:
+        explicit Shader(Device::RenderingDevice& device): m_device(device) {}
+        ~Shader() { Cleanup(); }
 
-    Shader& SetShaderPath(const std::string& path);
+        Shader& SetShaderPath(const std::string& path);
 
-    bool Init();
-    void Cleanup();
+        bool Init();
+        void Cleanup();
 
-    [[nodiscard]] VkShaderModule GetShaderModule() const
-    {
-        return m_shaderModule;
-    }
+        [[nodiscard]] VkShaderModule GetShaderModule() const
+        {
+            return m_shaderModule;
+        }
 
-    [[nodiscard]] std::string GetShaderPath() const
-    {
-        return m_shaderPath;
-    }
-private:
-    RenderingDevice& m_device;
+        [[nodiscard]] std::string GetShaderPath() const
+        {
+            return m_shaderPath;
+        }
+    private:
+        Device::RenderingDevice& m_device;
 
-    VkShaderModule m_shaderModule = VK_NULL_HANDLE;
-    std::string m_shaderPath;
+        VkShaderModule m_shaderModule = VK_NULL_HANDLE;
+        std::string m_shaderPath;
 
-    bool CreateShader();
-};
+        bool CreateShader();
+    };
+}

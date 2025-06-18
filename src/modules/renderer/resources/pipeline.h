@@ -7,60 +7,71 @@
 #include <volk.h>
 
 #include "descriptor_manager.h"
-#include "push_constant.h"
 #include "utilities/pipeline.h"
 
-class RenderingDevice;
+namespace GyroEngine::Device
+{
+    class RenderingDevice;
+}
 
-class Pipeline  {
-public:
-    explicit Pipeline(RenderingDevice& device): m_device(device) {}
-    ~Pipeline() { Cleanup(); }
+namespace GyroEngine::Rendering
+{
+    struct FrameContext;
+}
+using namespace GyroEngine;
 
-    Pipeline& SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
-    Pipeline& ClearConfig();
-    Pipeline& SetColorFormat(VkFormat colorFormat);
+namespace GyroEngine::Resources
+{
+    class Pipeline  {
+    public:
+        explicit Pipeline(Device::RenderingDevice& device): m_device(device) {}
+        ~Pipeline() { Cleanup(); }
 
-    bool Init();
-    void Cleanup();
+        Pipeline& SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
+        Pipeline& ClearConfig();
+        Pipeline& SetColorFormat(VkFormat colorFormat);
 
-    void Bind(const FrameContext& frameContext);
-    void DrawFullscreenQuad(const FrameContext& frameContext);
+        bool Init();
+        void Cleanup();
 
-    [[nodiscard]] pipelineutils::PipelineConfig& GetPipelineConfig()
-    {
-        return m_pipelineConfig;
-    }
+        void Bind(const Rendering::FrameContext& frameContext) const;
+        void DrawFullscreenQuad(const Rendering::FrameContext& frameContext) const;
 
-    [[nodiscard]] VkPipeline GetPipeline() const
-    {
-        return m_pipeline;
-    }
+        [[nodiscard]] Utils::Pipeline::PipelineConfig& GetPipelineConfig()
+        {
+            return m_pipelineConfig;
+        }
 
-    [[nodiscard]] VkPipelineLayout GetPipelineLayout() const
-    {
-        return m_pipelineLayout;
-    }
+        [[nodiscard]] VkPipeline GetPipeline() const
+        {
+            return m_pipeline;
+        }
 
-    [[nodiscard]] std::shared_ptr<DescriptorManager> GetDescriptorManager() const
-    {
-        return m_descriptorManager;
-    }
-private:
-    RenderingDevice& m_device;
+        [[nodiscard]] VkPipelineLayout GetPipelineLayout() const
+        {
+            return m_pipelineLayout;
+        }
 
-    VkPipeline m_pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
-    std::shared_ptr<DescriptorManager> m_descriptorManager;
+        [[nodiscard]] std::shared_ptr<DescriptorManager> GetDescriptorManager() const
+        {
+            return m_descriptorManager;
+        }
+    private:
+        Device::RenderingDevice& m_device;
 
-    pipelineutils::PipelineConfig m_pipelineConfig{};
+        VkPipeline m_pipeline = VK_NULL_HANDLE;
+        VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+        std::shared_ptr<DescriptorManager> m_descriptorManager;
 
-    // Using a local member causes memory violations
-    // ^ Why did I choose to create a member to temp store them?
-    // ^^ I have no clue, but it works
-    std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
-    std::vector<VkPushConstantRange> m_pushConstantRanges;
+        Utils::Pipeline::PipelineConfig m_pipelineConfig{};
 
-    bool BuildPipelineLayout();
-    bool BuildPipeline();
-};
+        // Using a local member causes memory violations
+        // ^ Why did I choose to create a member to temp store them?
+        // ^^ I have no clue, but it works
+        std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
+        std::vector<VkPushConstantRange> m_pushConstantRanges;
+
+        bool BuildPipelineLayout();
+        bool BuildPipeline();
+    };
+}

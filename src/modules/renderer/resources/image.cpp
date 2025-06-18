@@ -5,82 +5,85 @@
 #include "image.h"
 
 #include "context/rendering_device.h"
+#include "utilities/renderer.h"
 
 //Image Image::fromFile(RenderingDevice &device, const std::string &filePath) {}
 
-Image &Image::SetFormat(VkFormat format)
+namespace GyroEngine::Resources
+{
+    Image &Image::SetFormat(const VkFormat format)
 {
     m_format = format;
     return *this;
 }
 
-Image &Image::SetExtent(VkExtent3D extent)
+Image &Image::SetExtent(const VkExtent3D extent)
 {
     m_extent = extent;
     return *this;
 }
 
-Image &Image::SetMipLevels(uint32_t mipLevels)
+Image &Image::SetMipLevels(const uint32_t mipLevels)
 {
     m_mipLevels = mipLevels;
     return *this;
 }
 
-Image &Image::SetArrayLayers(uint32_t arrayLayers)
+Image &Image::SetArrayLayers(const uint32_t arrayLayers)
 {
     m_arrayLayers = arrayLayers;
     return *this;
 }
 
-Image &Image::SetUsage(VkImageUsageFlags usage)
+Image &Image::SetUsage(const VkImageUsageFlags usage)
 {
     m_usage = usage;
     return *this;
 }
 
-Image &Image::SetAspectMask(VkImageAspectFlags aspectMask)
+Image &Image::SetAspectMask(const VkImageAspectFlags aspectMask)
 {
     m_aspectMask = aspectMask;
     return *this;
 }
 
-Image &Image::SetImageType(VkImageType imageType)
+Image &Image::SetImageType(const VkImageType imageType)
 {
     m_imageType = imageType;
     return *this;
 }
 
-Image &Image::SetViewType(VkImageViewType viewType)
+Image &Image::SetViewType(const VkImageViewType viewType)
 {
     m_viewType = viewType;
     return *this;
 }
 
-Image &Image::SetSamples(VkSampleCountFlagBits samples)
+Image &Image::SetSamples(const VkSampleCountFlagBits samples)
 {
     m_samples = samples;
     return *this;
 }
 
-Image &Image::SetTiling(VkImageTiling tiling)
+Image &Image::SetTiling(const VkImageTiling tiling)
 {
     m_tiling = tiling;
     return *this;
 }
 
-Image &Image::SetCreateFlags(VkImageCreateFlags createFlags)
+Image &Image::SetCreateFlags(const VkImageCreateFlags createFlags)
 {
     m_createFlags = createFlags;
     return *this;
 }
 
-Image &Image::SetInitialLayout(VkImageLayout initialLayout)
+Image &Image::SetInitialLayout(const VkImageLayout initialLayout)
 {
     m_initialLayout = initialLayout;
     return *this;
 }
 
-bool Image::Init(VkImage externalImage, VkImageView imageView)
+bool Image::Init(const VkImage externalImage, const VkImageView imageView)
 {
     if (externalImage != VK_NULL_HANDLE && imageView != VK_NULL_HANDLE)
     {
@@ -107,50 +110,50 @@ void Image::Cleanup()
     DestroyImageView();
 }
 
-void Image::MakeColor(const deviceutils::QueueType dstQueue)
+void Image::MakeColor(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::MakeDepth(const deviceutils::QueueType dstQueue)
+void Image::MakeDepth(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::MakeStencil(const deviceutils::QueueType dstQueue)
+void Image::MakeStencil(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::MakePresent(const deviceutils::QueueType dstQueue)
+void Image::MakePresent(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, dstQueue);
 }
 
-void Image::MakeTransferSrc(const deviceutils::QueueType dstQueue)
+void Image::MakeTransferSrc(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstQueue);
 }
 
-void Image::MakeTransferDst(const deviceutils::QueueType dstQueue)
+void Image::MakeTransferDst(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstQueue);
 }
 
-void Image::MakeShaderReadable(deviceutils::QueueType dstQueue)
+void Image::MakeShaderReadable(const Utils::Device::QueueType dstQueue)
 {
     MoveToLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, dstQueue);
 }
 
-void Image::MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue)
+void Image::MoveToLayout(const VkImageLayout newLayout, const Utils::Device::QueueType dstQueue)
 {
     uint32_t dstQueueIndex = 0;
-    if (dstQueue == deviceutils::QueueType::None)
+    if (dstQueue == Utils::Device::QueueType::None)
     {
         dstQueueIndex = VK_QUEUE_FAMILY_IGNORED;
     } else
     {
-        DeviceQueue queue = m_device.GetDeviceFamilies().GetQueue(dstQueue);
+        Device::DeviceQueue queue = m_device.GetDeviceFamilies().GetQueue(dstQueue);
         if (queue.isValid())
         {
             dstQueueIndex = queue.family;
@@ -160,11 +163,11 @@ void Image::MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
         }
     }
 
-    rendererutils::SubmitOneTimeCommand(
+    Utils::Renderer::SubmitOneTimeCommand(
         m_device.GetLogicalDevice(),
         m_device.GetCommandPool(),
         m_device.GetDeviceFamilies().GetGraphicsQueue().queue,
-        [&](VkCommandBuffer commandBuffer)
+        [&](const VkCommandBuffer commandBuffer)
         {
             VkImageMemoryBarrier barrier{};
             barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -179,8 +182,8 @@ void Image::MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
             barrier.subresourceRange.baseArrayLayer = 0;
             barrier.subresourceRange.layerCount = m_arrayLayers;
 
-            VkPipelineStageFlags srcStageMask = imageutils::GetSourceStageFlags(m_imageLayout);
-            VkPipelineStageFlags dstStageMask = imageutils::GetDestinationStageFlags(newLayout);
+            const VkPipelineStageFlags srcStageMask = Utils::Image::GetSourceStageFlags(m_imageLayout);
+            const VkPipelineStageFlags dstStageMask = Utils::Image::GetDestinationStageFlags(newLayout);
 
             vkCmdPipelineBarrier(
                 commandBuffer,
@@ -195,14 +198,14 @@ void Image::MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
     );
 }
 
-void Image::CopyFromBuffer(VkBuffer buffer, uint32_t layerCount)
+void Image::CopyFromBuffer(const VkBuffer buffer, const uint32_t layerCount)
 {
-    VkImageLayout oldLayout = m_imageLayout;
-    rendererutils::SubmitOneTimeCommand(
+    const VkImageLayout oldLayout = m_imageLayout;
+    Utils::Renderer::SubmitOneTimeCommand(
         m_device.GetLogicalDevice(),
         m_device.GetCommandPool(),
         m_device.GetDeviceFamilies().GetGraphicsQueue().queue,
-        [&](VkCommandBuffer commandBuffer)
+        [&](const VkCommandBuffer commandBuffer)
         {
             MakeTransferDst(); // Must be in transfer destination layout before copying
             VkBufferImageCopy region{};
@@ -293,4 +296,5 @@ void Image::DestroyImageView()
         vkDestroyImageView(m_device.GetLogicalDevice(), m_imageView, nullptr);
         m_imageView = VK_NULL_HANDLE;
     }
+}
 }

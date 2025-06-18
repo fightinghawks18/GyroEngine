@@ -4,6 +4,8 @@
 
 #include "printer.h"
 
+#include <iostream>
+
 void Printer::Log(const std::string& message)
 {
     OnLogMessage(PrintType::Print, message);

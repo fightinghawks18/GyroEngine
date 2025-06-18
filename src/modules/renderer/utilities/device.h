@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include <stdexcept>
 #include <vector>
 #include <SDL3/SDL_vulkan.h>
 
 #include "debug/printer.h"
 
-namespace deviceutils
+namespace GyroEngine::Utils::Device
 {
     struct RankedDevice
     {
@@ -71,7 +72,7 @@ namespace deviceutils
     static Extensions CreateExtensions(const std::vector<const char*>& extensions)
     {
         Extensions exts;
-        exts.extensionCount = extensions.size();
+        exts.extensionCount = static_cast<uint32_t>(extensions.size());
         exts.extensions.reserve(extensions.size());
         for (auto extension : extensions)
         {
@@ -81,7 +82,7 @@ namespace deviceutils
     }
 
     /// @note Returns a new vector containing only the supported device extensions from the provided list.
-    static std::vector<const char*> EnumerateVectorForSupportedDeviceExtensions(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
+    static std::vector<const char*> EnumerateVectorForSupportedDeviceExtensions(const VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
     {
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -99,9 +100,9 @@ namespace deviceutils
         for (const auto& requested : extensions)
         {
             bool found = false;
-            for (const auto& available : availableExtensions)
+            for (const auto&[extensionName, specVersion] : availableExtensions)
             {
-                if (strcmp(requested, available.extensionName) == 0)
+                if (strcmp(requested, extensionName) == 0)
                 {
                     supportedExtensions.push_back(requested);
                     found = true;
@@ -143,9 +144,9 @@ namespace deviceutils
         for (const auto& requested : extensions)
         {
             bool found = false;
-            for (const auto& available : availableExtensions)
+            for (const auto&[extensionName, specVersion] : availableExtensions)
             {
-                if (strcmp(requested, available.extensionName) == 0)
+                if (strcmp(requested, extensionName) == 0)
                 {
                     supportedExtensions.push_back(requested);
                     found = true;

@@ -5,31 +5,41 @@
 #pragma once
 
 #include <volk.h>
-class RenderingDevice;
+namespace GyroEngine::Device
+{
+    class RenderingDevice;
+}
 
-struct FrameContext;
+namespace GyroEngine::Rendering
+{
+    struct FrameContext;
+}
+using namespace GyroEngine;
 
-class DescriptorSet  {
-public:
-    explicit DescriptorSet(RenderingDevice& device): m_device(device) {}
-    ~DescriptorSet() { Cleanup(); }
+namespace GyroEngine::Resources
+{
+    class DescriptorSet  {
+    public:
+        explicit DescriptorSet(Device::RenderingDevice& device): m_device(device) {}
+        ~DescriptorSet() { Cleanup(); }
 
-    DescriptorSet& SetLayout(VkDescriptorSetLayout layout);
-    DescriptorSet& SetPool(VkDescriptorPool pool);
+        DescriptorSet& SetLayout(VkDescriptorSetLayout layout);
+        DescriptorSet& SetPool(VkDescriptorPool pool);
 
-    bool Init();
-    void Cleanup();
+        bool Init();
+        void Cleanup();
 
-    void Bind(const FrameContext& frameContext, VkPipelineLayout layout);
+        void Bind(const Rendering::FrameContext& frameContext, VkPipelineLayout layout) const;
 
-    void UpdateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const;
-    void UpdateImage(uint32_t binding, VkImageView view, VkSampler sampler) const;
-private:
-    RenderingDevice& m_device;
+        void UpdateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const;
+        void UpdateImage(uint32_t binding, VkImageView view, VkSampler sampler) const;
+    private:
+        Device::RenderingDevice& m_device;
 
-    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
-    VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
-    VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
+        VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+        VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
+        VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
 
-    bool CreateDescriptorSet();
-};
+        bool CreateDescriptorSet();
+    };
+}

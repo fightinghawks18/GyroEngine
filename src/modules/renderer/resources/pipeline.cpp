@@ -7,7 +7,9 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
-Pipeline& Pipeline::SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager)
+namespace GyroEngine::Resources
+{
+    Pipeline& Pipeline::SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager)
 {
     m_descriptorManager = descriptorManager;
     return *this;
@@ -19,7 +21,7 @@ Pipeline& Pipeline::ClearConfig()
     return *this;
 }
 
-Pipeline& Pipeline::SetColorFormat(VkFormat colorFormat)
+Pipeline& Pipeline::SetColorFormat(const VkFormat colorFormat)
 {
     m_pipelineConfig.colorFormat = colorFormat;
     return *this;
@@ -53,7 +55,7 @@ void Pipeline::Cleanup()
     }
 }
 
-void Pipeline::Bind(const FrameContext& frameContext)
+void Pipeline::Bind(const Rendering::FrameContext& frameContext) const
 {
     if (m_pipeline != VK_NULL_HANDLE)
     {
@@ -62,8 +64,8 @@ void Pipeline::Bind(const FrameContext& frameContext)
 
     if (m_descriptorManager)
     {
-        auto descriptorSets = m_descriptorManager->GetDescriptorSets();
-        for (auto& descriptorSet : descriptorSets)
+        const auto descriptorSets = m_descriptorManager->GetDescriptorSets();
+        for (const auto& descriptorSet : descriptorSets)
         {
             descriptorSet->Bind(frameContext, m_pipelineLayout);
         }
@@ -78,9 +80,9 @@ void Pipeline::Bind(const FrameContext& frameContext)
     }
 }
 
-void Pipeline::DrawFullscreenQuad(const FrameContext &frameContext)
+void Pipeline::DrawFullscreenQuad(const Rendering::FrameContext& frameContext) const
 {
-    VkCommandBuffer cmd = frameContext.cmd;
+    const VkCommandBuffer cmd = frameContext.cmd;
     if (m_pipelineConfig.inputAssemblyState.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
     {
         vkCmdDraw(cmd, 6, 1, 0, 0); // Draw quad as 2 triangles
@@ -99,14 +101,14 @@ bool Pipeline::BuildPipelineLayout()
     m_descriptorSetLayouts.clear();
     if (m_descriptorManager)
     {
-        auto descriptorLayouts = m_descriptorManager->GetDescriptorLayouts();
+        const auto descriptorLayouts = m_descriptorManager->GetDescriptorLayouts();
         m_descriptorSetLayouts.reserve(descriptorLayouts.size());
-        for (auto& descriptorLayout : descriptorLayouts)
+        for (const auto& descriptorLayout : descriptorLayouts)
         {
             m_descriptorSetLayouts.push_back(descriptorLayout->GetDescriptorSetLayout());
         }
 
-        pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size();
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_descriptorSetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();
         //
     }
@@ -128,7 +130,7 @@ bool Pipeline::BuildPipelineLayout()
             pushConstantRange.size = pushConstant->GetSize();
             m_pushConstantRanges.push_back(pushConstantRange);
         }
-        pipelineLayoutInfo.pushConstantRangeCount = m_pushConstantRanges.size();
+        pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(m_pushConstantRanges.size());
         pipelineLayoutInfo.pPushConstantRanges = m_pushConstantRanges.data();
     } else
     {
@@ -155,17 +157,17 @@ bool Pipeline::BuildPipeline()
     // Shader stages
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     shaderStages.reserve(m_pipelineConfig.shaderStages.size());
-    for (const auto& shaderStage : m_pipelineConfig.shaderStages)
+    for (const auto&[stage, module, entryPoint] : m_pipelineConfig.shaderStages)
     {
         VkPipelineShaderStageCreateInfo shaderStageInfo = {};
         shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageInfo.stage = shaderStage.stage;
-        shaderStageInfo.module = shaderStage.module;
-        shaderStageInfo.pName = shaderStage.entryPoint;
+        shaderStageInfo.stage = stage;
+        shaderStageInfo.module = module;
+        shaderStageInfo.pName = entryPoint;
         shaderStages.push_back(shaderStageInfo);
     }
 
-    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages = shaderStages.data();
 
     // Vertex input
@@ -174,30 +176,30 @@ bool Pipeline::BuildPipeline()
 
     vertexInputBindingDescriptions.reserve(m_pipelineConfig.vertexInputState.inputBindings.size());
     vertexInputAttributeDescriptions.reserve(m_pipelineConfig.vertexInputState.inputAttributes.size());
-    for (const auto& inputAttribute : m_pipelineConfig.vertexInputState.inputAttributes)
+    for (const auto&[binding, location, offset, format] : m_pipelineConfig.vertexInputState.inputAttributes)
     {
         VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
-        vertexInputAttributeDescription.binding = inputAttribute.binding;
-        vertexInputAttributeDescription.location = inputAttribute.location;
-        vertexInputAttributeDescription.format = inputAttribute.format;
-        vertexInputAttributeDescription.offset = inputAttribute.offset;
+        vertexInputAttributeDescription.binding = binding;
+        vertexInputAttributeDescription.location = location;
+        vertexInputAttributeDescription.format = format;
+        vertexInputAttributeDescription.offset = offset;
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
     }
 
-    for (const auto& inputBinding : m_pipelineConfig.vertexInputState.inputBindings)
+    for (const auto&[binding, stride, inputRate] : m_pipelineConfig.vertexInputState.inputBindings)
     {
         VkVertexInputBindingDescription vertexInputBindingDescription = {};
-        vertexInputBindingDescription.binding = inputBinding.binding;
-        vertexInputBindingDescription.stride = inputBinding.stride;
-        vertexInputBindingDescription.inputRate = inputBinding.inputRate;
+        vertexInputBindingDescription.binding = binding;
+        vertexInputBindingDescription.stride = stride;
+        vertexInputBindingDescription.inputRate = inputRate;
         vertexInputBindingDescriptions.push_back(vertexInputBindingDescription);
     }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = vertexInputBindingDescriptions.size();
+    vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindingDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
-    vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescriptions.size();
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributeDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
@@ -211,7 +213,7 @@ bool Pipeline::BuildPipeline()
 
     VkPipelineDynamicStateCreateInfo dynamicState = {};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicState.dynamicStateCount = dynamicStates.size();
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
     VkPipelineViewportStateCreateInfo viewportState = {};
@@ -275,7 +277,7 @@ bool Pipeline::BuildPipeline()
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    colorBlending.attachmentCount = colorBlendAttachments.size();
+    colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachments.size());
     colorBlending.pAttachments = colorBlendAttachments.data();
 
     pipelineInfo.pViewportState = &viewportState;
@@ -300,4 +302,5 @@ bool Pipeline::BuildPipeline()
         return false;
     }
     return true;
+}
 }

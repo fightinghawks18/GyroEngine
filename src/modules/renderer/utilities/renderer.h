@@ -17,10 +17,10 @@
 #undef max
 #endif
 
-namespace rendererutils
+namespace GyroEngine::Utils::Renderer
 {
     /// @note Queries the surface's capabilities to retrieve the minimum image count required
-    static uint32_t getMinImageCount(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    static uint32_t getMinImageCount(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
@@ -28,7 +28,7 @@ namespace rendererutils
     }
 
     /// @note Queries the surface's capabilities to retrieve it's most suitable surface format
-    static VkSurfaceFormatKHR chooseBestSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    static VkSurfaceFormatKHR chooseBestSurfaceFormat(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         uint32_t formatCount = 0;
 
@@ -52,8 +52,8 @@ namespace rendererutils
         return availableFormats[0]; // Fallback to the first available format
     }
 
-    static VkRenderingInfoKHR CreateRenderStruct(VkExtent2D extent,
-        uint32_t colorCount = 1,
+    static VkRenderingInfoKHR CreateRenderStruct(const VkExtent2D extent,
+        const uint32_t colorCount = 1,
         uint32_t depthCount = 0)
     {
         VkRenderingInfoKHR renderingInfo = {};
@@ -69,10 +69,10 @@ namespace rendererutils
         return renderingInfo;
     }
 
-    static VkRenderingAttachmentInfoKHR CreateRenderAttachment(VkImageView imageView,
-        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    static VkRenderingAttachmentInfoKHR CreateRenderAttachment(const VkImageView imageView,
+        const VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        const VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        const VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
     {
         VkRenderingAttachmentInfoKHR renderAttachment = {};
         renderAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
@@ -85,7 +85,7 @@ namespace rendererutils
     }
 
     /// @note Queries the surface's capabilities to retrieve the best present mode
-    static VkPresentModeKHR ChooseBestPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    static VkPresentModeKHR ChooseBestPresentMode(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface)
     {
         uint32_t presentCount = 0;
 
@@ -110,7 +110,7 @@ namespace rendererutils
     }
 
     /// @note Queries the surface's capabilities to retrieve the best extent
-    static VkExtent2D ChooseBestExtent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t width, uint32_t height)
+    static VkExtent2D ChooseBestExtent(const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface, const uint32_t width, const uint32_t height)
     {
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -131,7 +131,7 @@ namespace rendererutils
     }
 
     /// @note Executes an action on a temporary command buffer
-    static void SubmitOneTimeCommand(VkDevice device, VkCommandPool commandPool, VkQueue queue, std::function<void(VkCommandBuffer)> recordFunction)
+    static void SubmitOneTimeCommand(const VkDevice device, const VkCommandPool commandPool, const VkQueue queue, const std::function<void(VkCommandBuffer)>& recordFunction)
     {
         VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

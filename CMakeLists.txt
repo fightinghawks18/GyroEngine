@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(GyroEngine)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(GyroBuildDir ${CMAKE_BINARY_DIR}/Gyro)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${GyroBuildDir})

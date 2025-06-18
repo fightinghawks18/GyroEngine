@@ -6,7 +6,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <vector>
 
 namespace types
 {
@@ -27,11 +26,11 @@ namespace types
 
         [[nodiscard]] glm::mat4 ToMatrix() const
         {
-            glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
-            glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
-            glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0, 1, 0));
-            glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0, 0, 1));
-            glm::mat4 scaling = glm::scale(glm::mat4(1.0f), scale);
+            const glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
+            const glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
+            const glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0, 1, 0));
+            const glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0, 0, 1));
+            const glm::mat4 scaling = glm::scale(glm::mat4(1.0f), scale);
 
             return translation * rotationX * rotationY * rotationZ * scaling;
         }
