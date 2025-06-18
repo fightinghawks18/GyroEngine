@@ -47,14 +47,14 @@ namespace GyroEngine::Rendering::Passes
                 VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL);
             stencilAttachment.clearValue.depthStencil = {0, 1};
 
+            std::vector colorAttachments = {colorAttachment};
+
             // Setup rendering info with attachments
             auto renderingInfo = Utils::Renderer::CreateRenderingInfo(
-                {{0, 0}, frame.swapchainExtent});
-            renderingInfo.colorAttachmentCount = 1;
-            renderingInfo.pColorAttachments = &colorAttachment;
-
-            renderingInfo.pDepthAttachment = &depthAttachment;
-            renderingInfo.pStencilAttachment = &stencilAttachment;
+                {{0, 0}, frame.swapchainExtent},
+                colorAttachments,
+                depthAttachment,
+                stencilAttachment);
 
             // Clear the attachments
             renderer.BindRenderingInfo(renderingInfo);

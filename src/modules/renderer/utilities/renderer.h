@@ -52,7 +52,11 @@ namespace GyroEngine::Utils::Renderer
         return availableFormats[0]; // Fallback to the first available format
     }
 
-    static VkRenderingInfoKHR CreateRenderingInfo(const VkRect2D renderArea)
+    static VkRenderingInfoKHR CreateRenderingInfo(
+        VkRect2D renderArea,
+        const std::vector<VkRenderingAttachmentInfoKHR>& colorAttachments,
+        const VkRenderingAttachmentInfoKHR& depthAttachment = {},
+        const VkRenderingAttachmentInfoKHR& stencilAttachment = {})
     {
         VkRenderingInfoKHR renderingInfo = {};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
@@ -60,6 +64,21 @@ namespace GyroEngine::Utils::Renderer
         renderingInfo.layerCount = 1;
         renderingInfo.viewMask = 0;
         renderingInfo.renderArea = renderArea;
+
+        renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+        renderingInfo.pColorAttachments = colorAttachments.empty() ? nullptr : colorAttachments.data();
+
+        if (!depthAttachment.imageView) {
+            renderingInfo.pDepthAttachment = nullptr;
+        } else {
+            renderingInfo.pDepthAttachment = &depthAttachment;
+        }
+
+        if (!stencilAttachment.imageView) {
+            renderingInfo.pStencilAttachment = nullptr;
+        } else {
+            renderingInfo.pStencilAttachment = &stencilAttachment;
+        }
 
         return renderingInfo;
     }
