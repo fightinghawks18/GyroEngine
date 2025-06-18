@@ -52,7 +52,7 @@ namespace rendererutils
         return availableFormats[0]; // Fallback to the first available format
     }
 
-    static VkRenderingInfoKHR newRenderStruct(VkExtent2D extent,
+    static VkRenderingInfoKHR CreateRenderStruct(VkExtent2D extent,
         uint32_t colorCount = 1,
         uint32_t depthCount = 0)
     {
@@ -69,7 +69,7 @@ namespace rendererutils
         return renderingInfo;
     }
 
-    static VkRenderingAttachmentInfoKHR newRenderAttachment(VkImageView imageView,
+    static VkRenderingAttachmentInfoKHR CreateRenderAttachment(VkImageView imageView,
         VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -85,7 +85,7 @@ namespace rendererutils
     }
 
     /// @note Queries the surface's capabilities to retrieve the best present mode
-    static VkPresentModeKHR chooseBestPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    static VkPresentModeKHR ChooseBestPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         uint32_t presentCount = 0;
 
@@ -110,7 +110,7 @@ namespace rendererutils
     }
 
     /// @note Queries the surface's capabilities to retrieve the best extent
-    static VkExtent2D chooseBestExtent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t width, uint32_t height)
+    static VkExtent2D ChooseBestExtent(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t width, uint32_t height)
     {
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -131,7 +131,7 @@ namespace rendererutils
     }
 
     /// @note Executes an action on a temporary command buffer
-    static void submitOneTimeCommand(VkDevice device, VkCommandPool commandPool, VkQueue queue, std::function<void(VkCommandBuffer)> recordFunction)
+    static void SubmitOneTimeCommand(VkDevice device, VkCommandPool commandPool, VkQueue queue, std::function<void(VkCommandBuffer)> recordFunction)
     {
         VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

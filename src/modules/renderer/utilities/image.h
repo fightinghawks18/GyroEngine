@@ -8,7 +8,7 @@
 
 namespace imageutils
 {
-    static uint32_t getSourceAccessMask(VkImageLayout src)
+    static uint32_t GetSourceAccessMask(VkImageLayout src)
     {
         switch (src) {
             case VK_IMAGE_LAYOUT_UNDEFINED:
@@ -31,7 +31,7 @@ namespace imageutils
     }
 
 
-    static uint32_t getDestinationAccessMask(VkImageLayout dst)
+    static uint32_t GetDestinationAccessMask(VkImageLayout dst)
     {
         switch (dst) {
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
@@ -49,7 +49,7 @@ namespace imageutils
         }
     }
 
-    static VkPipelineStageFlags getSourceStageFlags(VkImageLayout src)
+    static VkPipelineStageFlags GetSourceStageFlags(VkImageLayout src)
     {
         switch (src) {
             case VK_IMAGE_LAYOUT_UNDEFINED:
@@ -70,7 +70,7 @@ namespace imageutils
         }
     }
 
-    static VkPipelineStageFlags getDestinationStageFlags(VkImageLayout dst)
+    static VkPipelineStageFlags GetDestinationStageFlags(VkImageLayout dst)
     {
         switch (dst) {
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:

@@ -6,13 +6,12 @@
 
 #include <cstring>
 #include <volk.h>
-#include "device_resource.h"
 #include "implementation/vma_implementation.h"
 
 struct FrameContext;
 class RenderingDevice;
 
-class Buffer : public IDeviceResource {
+class Buffer  {
 public:
     enum class BufferType
     {
@@ -21,30 +20,32 @@ public:
         Uniform
     };
 
-    explicit Buffer(RenderingDevice& device): IDeviceResource(device) {}
-    ~Buffer() override { Buffer::cleanup(); }
+    explicit Buffer(RenderingDevice& device): m_device(device) {}
+    ~Buffer() { Cleanup(); }
 
-    Buffer& setBufferType(const BufferType& bufferType);
-    Buffer& setSize(VkDeviceSize size);
-    Buffer& setUsage(VkBufferUsageFlags usage);
-    Buffer& setMemoryUsage(VmaMemoryUsage memoryUsage);
-    Buffer& setSharingMode(VkSharingMode sharingMode);
+    Buffer& SetBufferType(const BufferType& bufferType);
+    Buffer& SetSize(VkDeviceSize size);
+    Buffer& SetUsage(VkBufferUsageFlags usage);
+    Buffer& SetMemoryUsage(VmaMemoryUsage memoryUsage);
+    Buffer& SetSharingMode(VkSharingMode sharingMode);
 
-    bool init() override;
-    void cleanup() override;
+    bool Init();
+    void Cleanup();
 
-    void bind(const FrameContext& frameContext) const;
+    void Bind(const FrameContext& frameContext) const;
 
-    void map(const void* data);
+    void Map(const void* data);
 
-    [[nodiscard]] VkBuffer getBuffer() const {
+    [[nodiscard]] VkBuffer GetBuffer() const {
         return m_buffer;
     }
 
-    [[nodiscard]] VkDeviceSize getSize() const {
+    [[nodiscard]] VkDeviceSize GetSize() const {
         return m_size;
     }
 private:
+    RenderingDevice& m_device;
+
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VmaAllocation m_allocation = VK_NULL_HANDLE;
     VkDeviceSize m_size = 0;
@@ -53,6 +54,6 @@ private:
     VkSharingMode m_sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     BufferType m_bufferType = BufferType::Uniform;
 
-    bool createBuffer();
-    void destroyBuffer();
+    bool CreateBuffer();
+    void DestroyBuffer();
 };

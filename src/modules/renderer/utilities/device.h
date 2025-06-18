@@ -53,7 +53,7 @@ namespace deviceutils
         }
     };
 
-    static Extensions getSDLExtensions()
+    static Extensions GetSDLExtensions()
     {
         Extensions exts;
 
@@ -68,7 +68,7 @@ namespace deviceutils
         }
         return exts;
     }
-    static Extensions createExtensions(const std::vector<const char*>& extensions)
+    static Extensions CreateExtensions(const std::vector<const char*>& extensions)
     {
         Extensions exts;
         exts.extensionCount = extensions.size();
@@ -81,7 +81,7 @@ namespace deviceutils
     }
 
     /// @note Returns a new vector containing only the supported device extensions from the provided list.
-    static std::vector<const char*> enumerateVectorForSupportedDeviceExtensions(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
+    static std::vector<const char*> EnumerateVectorForSupportedDeviceExtensions(VkPhysicalDevice physicalDevice, const std::vector<const char*>& extensions)
     {
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -91,7 +91,7 @@ namespace deviceutils
 
         if (availableExtensions.empty())
         {
-            Printer::error("No device extensions available");
+            Printer::LogError("No device extensions available");
             throw std::runtime_error("No device extensions available");
         }
 
@@ -110,13 +110,13 @@ namespace deviceutils
             }
             if (!found)
             {
-                Printer::warn(requested + std::string(" is not supported by this device"));
+                Printer::LogWarning(requested + std::string(" is not supported by this device"));
             }
         }
 
         if (supportedExtensions.empty())
         {
-            Printer::error("No supported device extensions found");
+            Printer::LogError("No supported device extensions found");
             throw std::runtime_error("No supported device extensions found");
         }
 
@@ -134,7 +134,7 @@ namespace deviceutils
 
         if (availableExtensions.empty())
         {
-            Printer::error("No instance extensions available");
+            Printer::LogError("No instance extensions available");
             throw std::runtime_error("No instance extensions available");
         }
 
@@ -154,14 +154,14 @@ namespace deviceutils
             }
             if (!found)
             {
-                Printer::warn(requested + std::string(" is not supported by this instance"));
+                Printer::LogWarning(requested + std::string(" is not supported by this instance"));
             }
         }
 
         // Check if any extensions were found
         if (supportedExtensions.empty())
         {
-            Printer::error("No supported instance extensions found");
+            Printer::LogError("No supported instance extensions found");
             throw std::runtime_error("No supported instance extensions found");
         }
 

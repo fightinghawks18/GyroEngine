@@ -7,7 +7,7 @@
 #include <string>
 #include <volk.h>
 
-#include "device_resource.h"
+class RenderingDevice;
 #include "../implementation/vma_implementation.h"
 #include "utilities/device.h"
 
@@ -16,57 +16,58 @@
 
 class RenderingDevice;
 
-class Image : public IDeviceResource {
+class Image  {
 public:
-    explicit Image(RenderingDevice& device) : IDeviceResource(device) {}
-    ~Image() override { Image::cleanup(); }
+    explicit Image(RenderingDevice& device) : m_device(device) {}
+    ~Image() { Cleanup(); }
 
     //static Image fromFile(RenderingDevice& device, const std::string& filePath);
 
-    Image& setFormat(VkFormat format);
-    Image& setExtent(VkExtent3D extent);
-    Image& setMipLevels(uint32_t mipLevels);
-    Image& setArrayLayers(uint32_t arrayLayers);
-    Image& setUsage(VkImageUsageFlags usage);
-    Image& setAspectMask(VkImageAspectFlags aspectMask);
-    Image& setImageType(VkImageType imageType);
-    Image& setViewType(VkImageViewType viewType);
-    Image& setSamples(VkSampleCountFlagBits samples);
-    Image& setTiling(VkImageTiling tiling);
-    Image& setCreateFlags(VkImageCreateFlags createFlags);
-    Image& setInitialLayout(VkImageLayout initialLayout);
+    Image& SetFormat(VkFormat format);
+    Image& SetExtent(VkExtent3D extent);
+    Image& SetMipLevels(uint32_t mipLevels);
+    Image& SetArrayLayers(uint32_t arrayLayers);
+    Image& SetUsage(VkImageUsageFlags usage);
+    Image& SetAspectMask(VkImageAspectFlags aspectMask);
+    Image& SetImageType(VkImageType imageType);
+    Image& SetViewType(VkImageViewType viewType);
+    Image& SetSamples(VkSampleCountFlagBits samples);
+    Image& SetTiling(VkImageTiling tiling);
+    Image& SetCreateFlags(VkImageCreateFlags createFlags);
+    Image& SetInitialLayout(VkImageLayout initialLayout);
 
-    bool init(VkImage externalImage = VK_NULL_HANDLE, VkImageView imageView = VK_NULL_HANDLE);
-    bool init() override { return true; };
-    void cleanup() override;
+    bool Init(VkImage externalImage = VK_NULL_HANDLE, VkImageView imageView = VK_NULL_HANDLE);
+    void Cleanup();
 
-    void makeColor(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void makeDepth(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void makeStencil(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void makePresent(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void makeTransferSrc(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void makeTransferDst(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void makeShaderReadable(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
-    void copyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
+    void MakeColor(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakeDepth(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakeStencil(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakePresent(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakeTransferSrc(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakeTransferDst(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MakeShaderReadable(deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue = deviceutils::QueueType::None);
+    void CopyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
 
-    [[nodiscard]] VkImage getImage() const {
+    [[nodiscard]] VkImage GetImage() const {
         return m_image;
     }
 
-    [[nodiscard]] VkImageView getImageView() const {
+    [[nodiscard]] VkImageView GetImageView() const {
         return m_imageView;
     }
 
-    [[nodiscard]] VkImageLayout getImageLayout() const {
+    [[nodiscard]] VkImageLayout GetImageLayout() const {
         return m_imageLayout;
     }
 
-    [[nodiscard]] VkExtent3D getExtent() const
+    [[nodiscard]] VkExtent3D GetExtent() const
     {
         return m_extent;
     }
 private:
+    RenderingDevice& m_device;
+
     VkImage m_image = VK_NULL_HANDLE;
     VkImageView m_imageView = VK_NULL_HANDLE;
     VkImageLayout m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -89,9 +90,9 @@ private:
 
     bool m_isExternal = false;
 
-    bool createImage();
-    bool createImageView();
+    bool CreateImage();
+    bool CreateImageView();
 
-    void destroyImage();
-    void destroyImageView();
+    void DestroyImage();
+    void DestroyImageView();
 };

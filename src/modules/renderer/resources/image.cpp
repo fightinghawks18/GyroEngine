@@ -8,79 +8,79 @@
 
 //Image Image::fromFile(RenderingDevice &device, const std::string &filePath) {}
 
-Image &Image::setFormat(VkFormat format)
+Image &Image::SetFormat(VkFormat format)
 {
     m_format = format;
     return *this;
 }
 
-Image &Image::setExtent(VkExtent3D extent)
+Image &Image::SetExtent(VkExtent3D extent)
 {
     m_extent = extent;
     return *this;
 }
 
-Image &Image::setMipLevels(uint32_t mipLevels)
+Image &Image::SetMipLevels(uint32_t mipLevels)
 {
     m_mipLevels = mipLevels;
     return *this;
 }
 
-Image &Image::setArrayLayers(uint32_t arrayLayers)
+Image &Image::SetArrayLayers(uint32_t arrayLayers)
 {
     m_arrayLayers = arrayLayers;
     return *this;
 }
 
-Image &Image::setUsage(VkImageUsageFlags usage)
+Image &Image::SetUsage(VkImageUsageFlags usage)
 {
     m_usage = usage;
     return *this;
 }
 
-Image &Image::setAspectMask(VkImageAspectFlags aspectMask)
+Image &Image::SetAspectMask(VkImageAspectFlags aspectMask)
 {
     m_aspectMask = aspectMask;
     return *this;
 }
 
-Image &Image::setImageType(VkImageType imageType)
+Image &Image::SetImageType(VkImageType imageType)
 {
     m_imageType = imageType;
     return *this;
 }
 
-Image &Image::setViewType(VkImageViewType viewType)
+Image &Image::SetViewType(VkImageViewType viewType)
 {
     m_viewType = viewType;
     return *this;
 }
 
-Image &Image::setSamples(VkSampleCountFlagBits samples)
+Image &Image::SetSamples(VkSampleCountFlagBits samples)
 {
     m_samples = samples;
     return *this;
 }
 
-Image &Image::setTiling(VkImageTiling tiling)
+Image &Image::SetTiling(VkImageTiling tiling)
 {
     m_tiling = tiling;
     return *this;
 }
 
-Image &Image::setCreateFlags(VkImageCreateFlags createFlags)
+Image &Image::SetCreateFlags(VkImageCreateFlags createFlags)
 {
     m_createFlags = createFlags;
     return *this;
 }
 
-Image &Image::setInitialLayout(VkImageLayout initialLayout)
+Image &Image::SetInitialLayout(VkImageLayout initialLayout)
 {
     m_initialLayout = initialLayout;
     return *this;
 }
 
-bool Image::init(VkImage externalImage, VkImageView imageView)
+bool Image::Init(VkImage externalImage, VkImageView imageView)
 {
     if (externalImage != VK_NULL_HANDLE && imageView != VK_NULL_HANDLE)
     {
@@ -89,60 +89,60 @@ bool Image::init(VkImage externalImage, VkImageView imageView)
         m_isExternal = true;
         return true;
     }
-    if (!createImage())
+    if (!CreateImage())
     {
         return false;
     }
-    if (!createImageView())
+    if (!CreateImageView())
     {
-        destroyImage();
+        DestroyImage();
         return false;
     }
     return true;
 }
 
-void Image::cleanup()
+void Image::Cleanup()
 {
-    destroyImage();
-    destroyImageView();
+    DestroyImage();
+    DestroyImageView();
 }
 
-void Image::makeColor(const deviceutils::QueueType dstQueue)
+void Image::MakeColor(const deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makeDepth(const deviceutils::QueueType dstQueue)
+void Image::MakeDepth(const deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makeStencil(const deviceutils::QueueType dstQueue)
+void Image::MakeStencil(const deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL, dstQueue);
 }
 
-void Image::makePresent(const deviceutils::QueueType dstQueue)
+void Image::MakePresent(const deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, dstQueue);
 }
 
-void Image::makeTransferSrc(const deviceutils::QueueType dstQueue)
+void Image::MakeTransferSrc(const deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstQueue);
 }
 
-void Image::makeTransferDst(const deviceutils::QueueType dstQueue)
+void Image::MakeTransferDst(const deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstQueue);
 }
 
-void Image::makeShaderReadable(deviceutils::QueueType dstQueue)
+void Image::MakeShaderReadable(deviceutils::QueueType dstQueue)
 {
-    moveToLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, dstQueue);
+    MoveToLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, dstQueue);
 }
 
-void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue)
+void Image::MoveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueue)
 {
     uint32_t dstQueueIndex = 0;
     if (dstQueue == deviceutils::QueueType::None)
@@ -150,7 +150,7 @@ void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
         dstQueueIndex = VK_QUEUE_FAMILY_IGNORED;
     } else
     {
-        DeviceQueue queue = m_device.getDeviceFamilies().getQueue(dstQueue);
+        DeviceQueue queue = m_device.GetDeviceFamilies().GetQueue(dstQueue);
         if (queue.isValid())
         {
             dstQueueIndex = queue.family;
@@ -160,10 +160,10 @@ void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
         }
     }
 
-    rendererutils::submitOneTimeCommand(
-        m_device.getLogicalDevice(),
-        m_device.getCommandPool(),
-        m_device.getDeviceFamilies().getGraphicsQueue().queue,
+    rendererutils::SubmitOneTimeCommand(
+        m_device.GetLogicalDevice(),
+        m_device.GetCommandPool(),
+        m_device.GetDeviceFamilies().GetGraphicsQueue().queue,
         [&](VkCommandBuffer commandBuffer)
         {
             VkImageMemoryBarrier barrier{};
@@ -179,8 +179,8 @@ void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
             barrier.subresourceRange.baseArrayLayer = 0;
             barrier.subresourceRange.layerCount = m_arrayLayers;
 
-            VkPipelineStageFlags srcStageMask = imageutils::getSourceStageFlags(m_imageLayout);
-            VkPipelineStageFlags dstStageMask = imageutils::getDestinationStageFlags(newLayout);
+            VkPipelineStageFlags srcStageMask = imageutils::GetSourceStageFlags(m_imageLayout);
+            VkPipelineStageFlags dstStageMask = imageutils::GetDestinationStageFlags(newLayout);
 
             vkCmdPipelineBarrier(
                 commandBuffer,
@@ -195,16 +195,16 @@ void Image::moveToLayout(VkImageLayout newLayout, deviceutils::QueueType dstQueu
     );
 }
 
-void Image::copyFromBuffer(VkBuffer buffer, uint32_t layerCount)
+void Image::CopyFromBuffer(VkBuffer buffer, uint32_t layerCount)
 {
     VkImageLayout oldLayout = m_imageLayout;
-    rendererutils::submitOneTimeCommand(
-        m_device.getLogicalDevice(),
-        m_device.getCommandPool(),
-        m_device.getDeviceFamilies().getGraphicsQueue().queue,
+    rendererutils::SubmitOneTimeCommand(
+        m_device.GetLogicalDevice(),
+        m_device.GetCommandPool(),
+        m_device.GetDeviceFamilies().GetGraphicsQueue().queue,
         [&](VkCommandBuffer commandBuffer)
         {
-            makeTransferDst(); // Must be in transfer destination layout before copying
+            MakeTransferDst(); // Must be in transfer destination layout before copying
             VkBufferImageCopy region{};
             region.bufferOffset = 0;
             region.bufferRowLength = 0;
@@ -226,10 +226,10 @@ void Image::copyFromBuffer(VkBuffer buffer, uint32_t layerCount)
             );
         }
     );
-    moveToLayout(oldLayout);
+    MoveToLayout(oldLayout);
 }
 
-bool Image::createImage()
+bool Image::CreateImage()
 {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -248,14 +248,14 @@ bool Image::createImage()
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-    if (vmaCreateImage(m_device.getAllocator(), &imageInfo, &allocInfo, &m_image, &m_allocation, nullptr) != VK_SUCCESS)
+    if (vmaCreateImage(m_device.GetAllocator(), &imageInfo, &allocInfo, &m_image, &m_allocation, nullptr) != VK_SUCCESS)
     {
         return false;
     }
     return true;
 }
 
-bool Image::createImageView()
+bool Image::CreateImageView()
 {
     VkImageViewCreateInfo imageViewInfo{};
     imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -268,29 +268,29 @@ bool Image::createImageView()
     imageViewInfo.subresourceRange.baseArrayLayer = 0;
     imageViewInfo.subresourceRange.layerCount = m_arrayLayers;
 
-    if (vkCreateImageView(m_device.getLogicalDevice(), &imageViewInfo, nullptr, &m_imageView) != VK_SUCCESS)
+    if (vkCreateImageView(m_device.GetLogicalDevice(), &imageViewInfo, nullptr, &m_imageView) != VK_SUCCESS)
     {
         return false;
     }
     return true;
 }
 
-void Image::destroyImage()
+void Image::DestroyImage()
 {
     if (m_isExternal) { return; }
     if (m_image != VK_NULL_HANDLE)
     {
-        vmaDestroyImage(m_device.getAllocator(), m_image, m_allocation);
+        vmaDestroyImage(m_device.GetAllocator(), m_image, m_allocation);
         m_image = VK_NULL_HANDLE;
         m_allocation = VK_NULL_HANDLE;
     }
 }
 
-void Image::destroyImageView()
+void Image::DestroyImageView()
 {
     if (m_imageView != VK_NULL_HANDLE)
     {
-        vkDestroyImageView(m_device.getLogicalDevice(), m_imageView, nullptr);
+        vkDestroyImageView(m_device.GetLogicalDevice(), m_imageView, nullptr);
         m_imageView = VK_NULL_HANDLE;
     }
 }

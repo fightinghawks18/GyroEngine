@@ -4,22 +4,22 @@
 
 #include "printer.h"
 
-void Printer::print(const std::string& message)
+void Printer::Log(const std::string& message)
 {
-    out(PrintType::Print, message);
+    OnLogMessage(PrintType::Print, message);
 }
 
-void Printer::warn(const std::string& message)
+void Printer::LogWarning(const std::string& message)
 {
-    out(PrintType::Warn, message);
+    OnLogMessage(PrintType::Warn, message);
 }
 
-void Printer::error(const std::string& message)
+void Printer::LogError(const std::string& message)
 {
-    out(PrintType::Error, message);
+    OnLogMessage(PrintType::Error, message);
 }
 
-void Printer::out(PrintType printType, const std::string& message)
+void Printer::OnLogMessage(PrintType printType, const std::string& message)
 {
     std::cout << message << std::endl;
 }

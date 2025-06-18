@@ -7,51 +7,51 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
-Buffer& Buffer::setBufferType(const BufferType& bufferType)
+Buffer& Buffer::SetBufferType(const BufferType& bufferType)
 {
     m_bufferType = bufferType;
     return *this;
 }
 
-Buffer& Buffer::setSize(VkDeviceSize size)
+Buffer& Buffer::SetSize(VkDeviceSize size)
 {
     m_size = size;
     return *this;
 }
 
-Buffer& Buffer::setUsage(VkBufferUsageFlags usage)
+Buffer& Buffer::SetUsage(VkBufferUsageFlags usage)
 {
     m_usage = usage;
     return *this;
 }
 
-Buffer& Buffer::setMemoryUsage(VmaMemoryUsage memoryUsage)
+Buffer& Buffer::SetMemoryUsage(VmaMemoryUsage memoryUsage)
 {
     m_memoryUsage = memoryUsage;
     return *this;
 }
 
-Buffer& Buffer::setSharingMode(VkSharingMode sharingMode)
+Buffer& Buffer::SetSharingMode(VkSharingMode sharingMode)
 {
     m_sharingMode = sharingMode;
     return *this;
 }
 
-bool Buffer::init()
+bool Buffer::Init()
 {
-    if (!createBuffer())
+    if (!CreateBuffer())
     {
         return false;
     }
     return true;
 }
 
-void Buffer::cleanup()
+void Buffer::Cleanup()
 {
-    destroyBuffer();
+    DestroyBuffer();
 }
 
-void Buffer::bind(const FrameContext& frameContext) const
+void Buffer::Bind(const FrameContext& frameContext) const
 {
     switch (m_bufferType)
     {
@@ -69,24 +69,24 @@ void Buffer::bind(const FrameContext& frameContext) const
     }
 }
 
-void Buffer::map(const void* data)
+void Buffer::Map(const void* data)
 {
     if (m_allocation != VK_NULL_HANDLE)
     {
         void* mappedData;
-        if (vmaMapMemory(m_device.getAllocator(), m_allocation, &mappedData) == VK_SUCCESS)
+        if (vmaMapMemory(m_device.GetAllocator(), m_allocation, &mappedData) == VK_SUCCESS)
         {
             std::memcpy(mappedData, data, m_size);
-            vmaUnmapMemory(m_device.getAllocator(), m_allocation);
+            vmaUnmapMemory(m_device.GetAllocator(), m_allocation);
         }
         else
         {
-            Printer::error("Failed to map buffer memory");
+            Printer::LogError("Failed to map buffer memory");
         }
     }
 }
 
-bool Buffer::createBuffer()
+bool Buffer::CreateBuffer()
 {
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -97,8 +97,8 @@ bool Buffer::createBuffer()
     // Only set queue family indices if using concurrent sharing mode
     if (m_sharingMode == VK_SHARING_MODE_CONCURRENT)
     {
-        auto& families = m_device.getDeviceFamilies();
-        uint32_t indices[] = {families.getGraphicsQueue().family, families.getTransferQueue().family};
+        auto& families = m_device.GetDeviceFamilies();
+        uint32_t indices[] = {families.GetGraphicsQueue().family, families.GetTransferQueue().family};
         uint32_t count = 0;
         for (uint32_t index : indices)
         {
@@ -116,20 +116,20 @@ bool Buffer::createBuffer()
     vmaInfo.usage = m_memoryUsage;
     vmaInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
-    if (vmaCreateBuffer(m_device.getAllocator(), &bufferInfo, &vmaInfo, &m_buffer, &m_allocation, nullptr) !=
+    if (vmaCreateBuffer(m_device.GetAllocator(), &bufferInfo, &vmaInfo, &m_buffer, &m_allocation, nullptr) !=
         VK_SUCCESS)
     {
-        Printer::error("Failed to create buffer");
+        Printer::LogError("Failed to create buffer");
         return false;
     }
     return true;
 }
 
-void Buffer::destroyBuffer()
+void Buffer::DestroyBuffer()
 {
     if (m_buffer != VK_NULL_HANDLE && m_allocation != VK_NULL_HANDLE)
     {
-        vmaDestroyBuffer(m_device.getAllocator(), m_buffer, m_allocation);
+        vmaDestroyBuffer(m_device.GetAllocator(), m_buffer, m_allocation);
         m_buffer = VK_NULL_HANDLE;
         m_allocation = VK_NULL_HANDLE;
     }

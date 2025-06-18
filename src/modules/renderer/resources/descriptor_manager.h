@@ -17,23 +17,23 @@ public:
     explicit DescriptorManager(RenderingDevice& device);
     ~DescriptorManager();
 
-    void cleanup();
+    void Cleanup();
 
-    std::shared_ptr<DescriptorPool> createDescriptorPool();
-    std::shared_ptr<DescriptorLayout> createDescriptorLayout();
-    std::shared_ptr<DescriptorSet> createDescriptorSet(const std::shared_ptr<DescriptorPool>& pool, const std::shared_ptr<DescriptorLayout>& layout);
+    std::shared_ptr<DescriptorPool> CreateDescriptorPool();
+    std::shared_ptr<DescriptorLayout> CreateDescriptorLayout();
+    std::shared_ptr<DescriptorSet> CreateDescriptorSet(const std::shared_ptr<DescriptorPool>& pool, const std::shared_ptr<DescriptorLayout>& layout);
 
-    [[nodiscard]] std::vector<std::shared_ptr<DescriptorSet>> getDescriptorSets()
+    [[nodiscard]] std::vector<std::shared_ptr<DescriptorSet>> GetDescriptorSets()
     {
         return m_descriptorSets;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<DescriptorPool>> getDescriptorPools()
+    [[nodiscard]] std::vector<std::shared_ptr<DescriptorPool>> GetDescriptorPools()
     {
         return m_descriptorPools;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<DescriptorLayout>> getDescriptorLayouts()
+    [[nodiscard]] std::vector<std::shared_ptr<DescriptorLayout>> GetDescriptorLayouts()
     {
         return m_descriptorLayouts;
     }

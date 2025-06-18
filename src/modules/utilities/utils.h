@@ -15,7 +15,7 @@
 
 namespace utils
 {
-    static std::string getExecutableDir()
+    static std::string GetExecutableDir()
     {
 #ifdef __linux__
         char result[PATH_MAX];

@@ -41,25 +41,25 @@ public:
 
     ~Renderer();
 
-    bool init(Window* window);
-    void cleanup();
+    bool Init(Window* window);
+    void Cleanup();
 
-    bool recreate();
-    void advanceFrame();
+    bool Resize();
+    void NextFrameIndex();
 
-    bool beginFrame();
-    void bindViewport(const Viewport& viewport);
-    void bindOutput(const VkRenderingInfoKHR &renderingInfo);
-    void beginRendering();
-    void endRendering();
-    void endFrame();
+    bool RecordFrame();
+    void BindViewport(const Viewport& viewport);
+    void BindRenderingInfo(const VkRenderingInfoKHR &renderingInfo);
+    void StartRender();
+    void EndRender();
+    void SubmitFrame();
 
-    [[nodiscard]] VkFormat getSwapchainColorFormat() const
+    [[nodiscard]] VkFormat GetSwapchainColorFormat() const
     {
         return m_swapchainImageFormat;
     }
 
-    [[nodiscard]] FrameContext& getFrameContext()
+    [[nodiscard]] FrameContext& GetFrameContext()
     {
         m_frameContext.cmd = m_commandBuffers[m_currentFrame];
         m_frameContext.imageIndex = m_currentImageIndex;
@@ -74,7 +74,7 @@ public:
         return m_frameContext;
     }
 
-    [[nodiscard]] std::vector<Image*>& getPipelineImages()
+    [[nodiscard]] std::vector<Image*>& GetPipelineImages()
     {
         return m_pipelineImages;
     }
@@ -110,22 +110,22 @@ private:
 
     FrameContext m_frameContext = {};
 
-    bool startRecord();
-    void presentRender();
-    void submitRender();
-    void endRecord();
+    bool StartRecord();
+    void PresentRender();
+    void SubmitRender();
+    void EndRecord();
 
-    bool createSwapchain();
-    bool createSwapchainImages();
-    bool createImages();
-    bool createSampler();
-    bool createCommandBuffers();
-    bool createSyncObjects();
+    bool CreateSwapchain();
+    bool CreateSwapchainImages();
+    bool CreateImages();
+    bool CreateSampler();
+    bool CreateCommandBuffers();
+    bool CreateSyncObjects();
 
-    void destroyCommandBuffers();
-    void destroySyncObjects();
-    void destroySwapchainImages();
-    void destroySampler();
-    void destroyImages();
-    void destroySwapchain();
+    void DestroyCommandBuffers();
+    void DestroySyncObjects();
+    void DestroySwapchainImages();
+    void DestroySampler();
+    void DestroyImages();
+    void DestroySwapchain();
 };

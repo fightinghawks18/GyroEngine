@@ -6,37 +6,37 @@
 
 #include "context/rendering_device.h"
 
-DescriptorLayout& DescriptorLayout::addBinding(const LayoutBinding binding)
+DescriptorLayout& DescriptorLayout::AddBinding(const LayoutBinding binding)
 {
     m_descriptorSetLayoutBindings.push_back(binding);
     return *this;
 }
 
-DescriptorLayout& DescriptorLayout::clearBindings()
+DescriptorLayout& DescriptorLayout::ClearBindings()
 {
     m_descriptorSetLayoutBindings.clear();
     return *this;
 }
 
-bool DescriptorLayout::init()
+bool DescriptorLayout::Init()
 {
     if (m_descriptorSetLayout != VK_NULL_HANDLE)
     {
         return false;
     }
-    return createDescriptorSetLayout();
+    return CreateDescriptorSetLayout();
 }
 
-void DescriptorLayout::cleanup()
+void DescriptorLayout::Cleanup()
 {
     if (m_descriptorSetLayout != VK_NULL_HANDLE)
     {
-        vkDestroyDescriptorSetLayout(m_device.getLogicalDevice(), m_descriptorSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(m_device.GetLogicalDevice(), m_descriptorSetLayout, nullptr);
         m_descriptorSetLayout = VK_NULL_HANDLE;
     }
 }
 
-bool DescriptorLayout::createDescriptorSetLayout()
+bool DescriptorLayout::CreateDescriptorSetLayout()
 {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.reserve(m_descriptorSetLayoutBindings.size());
@@ -50,10 +50,10 @@ bool DescriptorLayout::createDescriptorSetLayout()
     descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     descriptorSetLayoutInfo.pBindings = bindings.data();
 
-    VkResult result = vkCreateDescriptorSetLayout(m_device.getLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &m_descriptorSetLayout);
+    VkResult result = vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &m_descriptorSetLayout);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to create descriptor set layout");
+        Printer::LogError("Failed to create descriptor set layout");
         return false;
     }
     return true;

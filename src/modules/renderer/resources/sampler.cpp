@@ -5,94 +5,94 @@
 #include "sampler.h"
 #include "context/rendering_device.h"
 
-Sampler& Sampler::setMinFilter(VkFilter minFilter)
+Sampler& Sampler::SetMinFilter(VkFilter minFilter)
 {
     m_minFilter = minFilter;
     return *this;
 }
 
-Sampler& Sampler::setMagFilter(VkFilter magFilter)
+Sampler& Sampler::SetMagFilter(VkFilter magFilter)
 {
     m_magFilter = magFilter;
     return *this;
 }
 
-Sampler& Sampler::setAddressModeU(VkSamplerAddressMode modeU)
+Sampler& Sampler::SetAddressModeU(VkSamplerAddressMode modeU)
 {
     m_addressModeU = modeU;
     return *this;
 }
 
-Sampler& Sampler::setAddressModeV(VkSamplerAddressMode modeV)
+Sampler& Sampler::SetAddressModeV(VkSamplerAddressMode modeV)
 {
     m_addressModeV = modeV;
     return *this;
 }
 
-Sampler& Sampler::setAddressModeW(VkSamplerAddressMode modeW)
+Sampler& Sampler::SetAddressModeW(VkSamplerAddressMode modeW)
 {
     m_addressModeW = modeW;
     return *this;
 }
 
-Sampler& Sampler::setMipLodBias(float bias)
+Sampler& Sampler::SetMipLodBias(float bias)
 {
     m_mipLodBias = bias;
     return *this;
 }
 
-Sampler& Sampler::setMinLod(float minLod)
+Sampler& Sampler::SetMinLod(float minLod)
 {
     m_minLod = minLod;
     return *this;
 }
 
-Sampler& Sampler::setMaxLod(float maxLod)
+Sampler& Sampler::SetMaxLod(float maxLod)
 {
     m_maxLod = maxLod;
     return *this;
 }
 
-Sampler& Sampler::setAnisotropy(bool enable)
+Sampler& Sampler::SetAnisotropy(bool enable)
 {
     m_anisotropyEnable = enable;
     return *this;
 }
 
-Sampler& Sampler::setAnisotropyLevel(float level)
+Sampler& Sampler::SetAnisotropyLevel(float level)
 {
     m_anisotropyLevel = level;
     return *this;
 }
 
-Sampler& Sampler::setCompareOp(VkCompareOp compareOp)
+Sampler& Sampler::SetCompareOp(VkCompareOp compareOp)
 {
     m_compareOp = compareOp;
     return *this;
 }
 
-bool Sampler::init()
+bool Sampler::Init()
 {
     if (m_sampler != VK_NULL_HANDLE)
     {
         return false;
     }
-    return createSampler();
+    return CreateSampler();
 }
 
-void Sampler::cleanup()
+void Sampler::Cleanup()
 {
     if (m_sampler != VK_NULL_HANDLE)
     {
-        vkDestroySampler(m_device.getLogicalDevice(), m_sampler, nullptr);
+        vkDestroySampler(m_device.GetLogicalDevice(), m_sampler, nullptr);
         m_sampler = VK_NULL_HANDLE;
     }
 }
 
-bool Sampler::createSampler()
+bool Sampler::CreateSampler()
 {
-    if (m_anisotropyEnable && m_anisotropyLevel > m_device.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy) {
-        Printer::error("Anisotropy level exceeds device limits");
+    if (m_anisotropyEnable && m_anisotropyLevel > m_device.GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy) {
+        Printer::LogError("Anisotropy level exceeds device limits");
         return false;
     }
 
@@ -117,10 +117,10 @@ bool Sampler::createSampler()
 
     samplerInfo.compareOp = m_compareOp;
 
-    VkResult result = vkCreateSampler(m_device.getLogicalDevice(), &samplerInfo, nullptr, &m_sampler);
+    VkResult result = vkCreateSampler(m_device.GetLogicalDevice(), &samplerInfo, nullptr, &m_sampler);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to create sampler");
+        Printer::LogError("Failed to create sampler");
         return false;
     }
     return true;

@@ -13,43 +13,43 @@ DescriptorManager::DescriptorManager(RenderingDevice& device)
 
 DescriptorManager::~DescriptorManager() = default;
 
-void DescriptorManager::cleanup()
+void DescriptorManager::Cleanup()
 {
-    m_device.waitIdle();
+    m_device.WaitForIdle();
     for (const auto& pool : m_descriptorPools) {
-        pool->cleanup();
+        pool->Cleanup();
     }
     for (const auto& layout : m_descriptorLayouts) {
-        layout->cleanup();
+        layout->Cleanup();
     }
     for (const auto& set : m_descriptorSets) {
-        set->cleanup();
+        set->Cleanup();
     }
     m_descriptorPools.clear();
     m_descriptorLayouts.clear();
     m_descriptorSets.clear();
 }
 
-std::shared_ptr<DescriptorPool> DescriptorManager::createDescriptorPool()
+std::shared_ptr<DescriptorPool> DescriptorManager::CreateDescriptorPool()
 {
     auto pool = std::make_shared<DescriptorPool>(m_device);
     m_descriptorPools.push_back(pool);
     return pool;
 }
 
-std::shared_ptr<DescriptorLayout> DescriptorManager::createDescriptorLayout()
+std::shared_ptr<DescriptorLayout> DescriptorManager::CreateDescriptorLayout()
 {
     auto layout = std::make_shared<DescriptorLayout>(m_device);
     m_descriptorLayouts.push_back(layout);
     return layout;
 }
 
-std::shared_ptr<DescriptorSet> DescriptorManager::createDescriptorSet(const std::shared_ptr<DescriptorPool>& pool,
+std::shared_ptr<DescriptorSet> DescriptorManager::CreateDescriptorSet(const std::shared_ptr<DescriptorPool>& pool,
     const std::shared_ptr<DescriptorLayout>& layout)
 {
     auto set = std::make_shared<DescriptorSet>(m_device);
-    set->setLayout(layout->getDescriptorSetLayout());
-    set->setPool(pool->getDescriptorPool());
+    set->SetLayout(layout->GetDescriptorSetLayout());
+    set->SetPool(pool->GetDescriptorPool());
     m_descriptorSets.push_back(set);
     return set;
 }

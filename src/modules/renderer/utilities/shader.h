@@ -22,7 +22,7 @@ namespace shaderutils
         Compute
     };
 
-    inline std::vector<char> readShaderSPV(const std::string& filePath) {
+    inline std::vector<char> ReadShaderSPV(const std::string& filePath) {
         std::ifstream file(filePath, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {
             throw std::runtime_error("Failed to open shader file: " + filePath);
@@ -38,7 +38,7 @@ namespace shaderutils
         return buffer;
     }
 
-    inline std::string readShaderSource(const std::string& filePath) {
+    inline std::string ReadShaderSource(const std::string& filePath) {
         std::ifstream file(filePath);
         if (!file.is_open()) {
             throw std::runtime_error("Failed to open shader file: " + filePath);
@@ -51,8 +51,8 @@ namespace shaderutils
         return buffer.str();
     }
 
-    inline std::vector<uint32_t> compileShader(const std::string& source, shaderc_shader_kind kind) {
-        std::string shaderSource = readShaderSource(source);
+    inline std::vector<uint32_t> CompileShader(const std::string& source, shaderc_shader_kind kind) {
+        std::string shaderSource = ReadShaderSource(source);
 
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
@@ -65,8 +65,8 @@ namespace shaderutils
         return {result.cbegin(), result.cend()};
     }
 
-    inline void compileShaderToFile(const std::string& sourcePath, shaderc_shader_kind kind) {
-        std::string shaderSource = readShaderSource(sourcePath);
+    inline void CompileShaderToFile(const std::string& sourcePath, shaderc_shader_kind kind) {
+        std::string shaderSource = ReadShaderSource(sourcePath);
 
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;

@@ -10,70 +10,52 @@ RenderingDevice::RenderingDevice() = default;
 
 RenderingDevice::~RenderingDevice()
 {
-    cleanup();
+    Cleanup();
 }
 
-bool RenderingDevice::init()
+bool RenderingDevice::Init()
 {
-    if (!createInstance()) return false;
-    if (!setupDebugMessenger()) return false;
-    if (!selectPhysicalDevice()) return false;
-    if (!createLogicalDevice()) return false;
-    if (!createAllocator()) return false;
-    if (!createCommandPool()) return false;
-    if (!createDeviceFamilies()) return false;
-    if (!querySupportedColorFormats()) return false;
-    if (!querySupportedDepthFormats()) return false;
-    if (!findPreferredColorFormat()) return false;
-    if (!findBestDepthFormat()) return false;
+    if (!CreateInstance()) return false;
+    if (!SetupDebugMessenger()) return false;
+    if (!SelectPhysicalDevice()) return false;
+    if (!CreateLogicalDevice()) return false;
+    if (!CreateAllocator()) return false;
+    if (!CreateCommandPool()) return false;
+    if (!CreateDeviceFamilies()) return false;
+    if (!QueryAllSupportedColorFormats()) return false;
+    if (!QueryAllSupportedDepthFormats()) return false;
+    if (!FindPreferredColorFormat()) return false;
+    if (!FindBestDepthFormat()) return false;
     return true;
 }
 
-void RenderingDevice::cleanup()
+void RenderingDevice::Cleanup()
 {
-    waitIdle();
+    WaitForIdle();
 
-    for (auto& resource : m_resources)
-    {
-        if (resource)
-        {
-            resource.reset();
-        }
-    }
-    m_resources.clear();
-
-    for (auto& anyResource : m_anyResources)
-    {
-        if (anyResource)
-        {
-            anyResource.reset();
-        }
-    }
-    m_anyResources.clear();
-
-    m_maid.cleanup();
+    m_maid.Cleanup();
     volkFinalize();
 }
 
-void RenderingDevice::setColorPreference(PreferredColorFormatType preferredColorFormat)
+void RenderingDevice::SetColorPreference(PreferredColorFormatType preferredColorFormat)
 {
     PreferredColorFormatType oldPreferredColor = m_preferredColorType;
     VkFormat oldFormat = m_colorFormat;
     m_preferredColorType = preferredColorFormat;
-    if (!findPreferredColorFormat())
+    if (!FindPreferredColorFormat())
     {
-        Printer::warn("Fallback override, reusing previous format");
+        Printer::LogWarning("Fallback override, reusing previous format");
         m_colorFormat = oldFormat;
         m_preferredColorType = oldPreferredColor;
     }
 }
 
-void RenderingDevice::setSwapchainColorFormat(VkFormat swapchainColorFormat)
+void RenderingDevice::SetSwapchainColorFormat(VkFormat swapchainColorFormat)
 {
     m_swapchainColorFormat = swapchainColorFormat;
 }
 
-VkFormat RenderingDevice::queryColorFormat(VkFormat format)
+VkFormat RenderingDevice::QueryForSupportedColorFormat(VkFormat format)
 {
     if (std::find(m_supportedColorFormats.begin(), m_supportedColorFormats.end(), format) != m_supportedColorFormats.end())
     {
@@ -82,7 +64,7 @@ VkFormat RenderingDevice::queryColorFormat(VkFormat format)
     return m_supportedColorFormats[0];
 }
 
-VkFormat RenderingDevice::queryDepthFormat(VkFormat format)
+VkFormat RenderingDevice::QueryForSupportedDepthFormat(VkFormat format)
 {
     if (std::find(m_supportedDepthFormats.begin(), m_supportedDepthFormats.end(), format) != m_supportedDepthFormats.end())
     {
@@ -91,19 +73,19 @@ VkFormat RenderingDevice::queryDepthFormat(VkFormat format)
     return m_supportedDepthFormats[0];
 }
 
-VkSurfaceKHR RenderingDevice::createSurface(const Window *window) const
+VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Window *window) const
 {
-    SDL_Window* sdlWindow = window->getWindow();
+    SDL_Window* sdlWindow = window->GetWindowHandle();
     VkSurfaceKHR surface;
     if (!SDL_Vulkan_CreateSurface(sdlWindow, m_instance, nullptr, &surface))
     {
-        Printer::error(SDL_GetError());
+        Printer::LogError(SDL_GetError());
         return VK_NULL_HANDLE;
     }
     return surface;
 }
 
-DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface) const
+DeviceQueue RenderingDevice::GetPresentQueueFromSurface(VkSurfaceKHR surface) const
 {
     uint32_t familyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &familyCount, nullptr);
@@ -128,41 +110,11 @@ DeviceQueue RenderingDevice::getPresentQueue(VkSurfaceKHR surface) const
     return {};
 }
 
-void RenderingDevice::manageResource(const std::shared_ptr<IDeviceResource>& resource)
-{
-    if (!resource)
-    {
-        Printer::warn("Attempted to manage a null resource");
-        return;
-    }
-    if (std::find(m_resources.begin(), m_resources.end(), resource) != m_resources.end())
-    {
-        Printer::warn("Resource already managed by the device");
-        return;
-    }
-    m_resources.push_back(resource);
-}
-
-void RenderingDevice::manageNonResource(const std::shared_ptr<void>& resource)
-{
-    if (!resource)
-    {
-        Printer::warn("Attempted to manage a null non-resource");
-        return;
-    }
-    if (std::find(m_anyResources.begin(), m_anyResources.end(), resource) != m_anyResources.end())
-    {
-        Printer::warn("Non-resource already managed by the device");
-        return;
-    }
-    m_anyResources.push_back(resource);
-}
-
-bool RenderingDevice::createInstance()
+bool RenderingDevice::CreateInstance()
 {
     volkInitialize();
 
-    deviceutils::Extensions extensions = deviceutils::getSDLExtensions();
+    deviceutils::Extensions extensions = deviceutils::GetSDLExtensions();
     extensions.extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     std::vector<const char*> validationLayers = {};
@@ -200,15 +152,15 @@ bool RenderingDevice::createInstance()
 
     volkLoadInstance(m_instance);
 
-    m_maid.add([&]()
+    m_maid.Add([&]()
     {
-       destroyInstance();
+       DestroyInstance();
     });
 
     return true;
 }
 
-bool RenderingDevice::setupDebugMessenger()
+bool RenderingDevice::SetupDebugMessenger()
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -219,25 +171,25 @@ bool RenderingDevice::setupDebugMessenger()
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = &debugMessengerCallback;
+    createInfo.pfnUserCallback = &DebugMessengerCallback;
 
     VkResult result = vkCreateDebugUtilsMessengerEXT(
         m_instance, &createInfo, nullptr, &m_debugMessenger);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to create debug messenger: " + std::to_string(result));
+        Printer::LogError("Failed to create debug messenger: " + std::to_string(result));
         return false;
     }
 
-    m_maid.add([&]()
+    m_maid.Add([&]()
     {
-       destroyDebugMessenger();
+       DestroyDebugMessenger();
     });
 
     return true;
 }
 
-bool RenderingDevice::selectPhysicalDevice()
+bool RenderingDevice::SelectPhysicalDevice()
 {
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, nullptr);
@@ -247,7 +199,7 @@ bool RenderingDevice::selectPhysicalDevice()
 
     if (physicalDeviceCount == 0)
     {
-        Printer::error("No physical devices to pick from");
+        Printer::LogError("No physical devices to pick from");
         return false;
     }
 
@@ -284,7 +236,7 @@ bool RenderingDevice::selectPhysicalDevice()
             }
             break;
         default:
-            Printer::error("Unknown or unsupported GPU type enumerated");
+            Printer::LogError("Unknown or unsupported GPU type enumerated");
             break;
         }
 
@@ -317,7 +269,7 @@ bool RenderingDevice::selectPhysicalDevice()
 
     if (rankedDevices.empty())
     {
-        Printer::error("No supported physical devices found");
+        Printer::LogError("No supported physical devices found");
         return false;
     }
 
@@ -328,11 +280,11 @@ bool RenderingDevice::selectPhysicalDevice()
         });
 
     m_physicalDevice = best->physicalDevice;
-    Printer::print(std::string("Selected device: ") + best->properties.deviceName + " (score: " + std::to_string(best->score) + ")");
+    Printer::Log(std::string("Selected device: ") + best->properties.deviceName + " (score: " + std::to_string(best->score) + ")");
     return true;
 }
 
-bool RenderingDevice::createLogicalDevice()
+bool RenderingDevice::CreateLogicalDevice()
 {
     uint32_t familyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &familyCount, nullptr);
@@ -401,7 +353,7 @@ bool RenderingDevice::createLogicalDevice()
     }
 
     deviceutils::Extensions deviceExtensions;
-    deviceExtensions = deviceutils::createExtensions({
+    deviceExtensions = deviceutils::CreateExtensions({
         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
         VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
@@ -435,7 +387,7 @@ bool RenderingDevice::createLogicalDevice()
     synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
     synchronization2Features.pNext = &indexingFeatures;
 
-    const std::vector<const char*> supportedDeviceExtensions = deviceutils::enumerateVectorForSupportedDeviceExtensions(
+    const std::vector<const char*> supportedDeviceExtensions = deviceutils::EnumerateVectorForSupportedDeviceExtensions(
         m_physicalDevice, deviceExtensions.extensions);
 
     VkDeviceCreateInfo createInfo = {};
@@ -449,19 +401,19 @@ bool RenderingDevice::createLogicalDevice()
     VkResult result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_logicalDevice);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to create logical device");
+        Printer::LogError("Failed to create logical device");
         return false;
     }
 
-    m_maid.add([&]()
+    m_maid.Add([&]()
     {
-       destroyLogicalDevice();
+       DestroyLogicalDevice();
     });
 
     return true;
 }
 
-bool RenderingDevice::createDeviceFamilies()
+bool RenderingDevice::CreateDeviceFamilies()
 {
     uint32_t familyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &familyCount, nullptr);
@@ -471,7 +423,7 @@ bool RenderingDevice::createDeviceFamilies()
 
     for (uint32_t i = 0; i < familyCount; i++)
     {
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !m_deviceFamilies.getGraphicsQueue().isValid())
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !m_deviceFamilies.GetGraphicsQueue().isValid())
         {
             DeviceQueue queue{};
             queue.type = deviceutils::QueueType::Graphics;
@@ -493,7 +445,7 @@ bool RenderingDevice::createDeviceFamilies()
             m_deviceFamilies.queues.push_back(queue);
         }
 
-        if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT && !m_deviceFamilies.getComputeQueue().isValid())
+        if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT && !m_deviceFamilies.GetComputeQueue().isValid())
         {
             DeviceQueue queue{};
             queue.type = deviceutils::QueueType::Compute;
@@ -506,20 +458,20 @@ bool RenderingDevice::createDeviceFamilies()
 
     if (m_deviceFamilies.queues.empty())
     {
-        Printer::error("No device queue familes found");
+        Printer::LogError("No device queue familes found");
         return false;
     }
 
-    if (!m_deviceFamilies.getGraphicsQueue().isValid())
+    if (!m_deviceFamilies.GetGraphicsQueue().isValid())
     {
-        Printer::error("No graphics queue family found");
+        Printer::LogError("No graphics queue family found");
         return false;
     }
 
     return true;
 }
 
-bool RenderingDevice::createAllocator()
+bool RenderingDevice::CreateAllocator()
 {
     VmaVulkanFunctions vmaFuncs = {};
     vmaFuncs.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
@@ -533,36 +485,36 @@ bool RenderingDevice::createAllocator()
     allocatorInfo.pVulkanFunctions = &vmaFuncs;
 
     if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS) {
-        Printer::error("Failed to create VMA allocator");
+        Printer::LogError("Failed to create VMA allocator");
         return false;
     }
 
-    m_maid.add([&]() {
-        destroyAllocator();
+    m_maid.Add([&]() {
+        DestroyAllocator();
     });
 
     return true;
 }
 
-bool RenderingDevice::createCommandPool()
+bool RenderingDevice::CreateCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = m_deviceFamilies.getGraphicsQueue().family;
+    poolInfo.queueFamilyIndex = m_deviceFamilies.GetGraphicsQueue().family;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     if (vkCreateCommandPool(m_logicalDevice, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS)
     {
-        Printer::error("Failed to create command pool");
+        Printer::LogError("Failed to create command pool");
         return false;
     }
-    m_maid.add([&]()
+    m_maid.Add([&]()
     {
-       destroyCommandPool();
+       DestroyCommandPool();
     });
     return true;
 }
 
-bool RenderingDevice::querySupportedColorFormats()
+bool RenderingDevice::QueryAllSupportedColorFormats()
 {
     std::vector availableColorFormats = {
         VK_FORMAT_R8G8B8A8_UNORM,
@@ -587,13 +539,13 @@ bool RenderingDevice::querySupportedColorFormats()
 
     if (m_supportedColorFormats.empty())
     {
-        Printer::error("No supported color formats found");
+        Printer::LogError("No supported color formats found");
         return false;
     }
     return true;
 }
 
-bool RenderingDevice::querySupportedDepthFormats()
+bool RenderingDevice::QueryAllSupportedDepthFormats()
 {
     std::vector availableDepthFormats = {
         VK_FORMAT_D24_UNORM_S8_UINT,
@@ -613,12 +565,12 @@ bool RenderingDevice::querySupportedDepthFormats()
 
     if (m_supportedDepthFormats.empty())
     {
-        Printer::error("No supported depth formats found");
+        Printer::LogError("No supported depth formats found");
         return false;
     }
     return true;
 }
-void RenderingDevice::destroyCommandPool()
+void RenderingDevice::DestroyCommandPool()
 {
     if (m_commandPool != VK_NULL_HANDLE)
     {
@@ -627,7 +579,7 @@ void RenderingDevice::destroyCommandPool()
     }
 }
 
-void RenderingDevice::destroyAllocator()
+void RenderingDevice::DestroyAllocator()
 {
     if (m_allocator != VK_NULL_HANDLE)
     {
@@ -636,7 +588,7 @@ void RenderingDevice::destroyAllocator()
     }
 }
 
-void RenderingDevice::destroyLogicalDevice()
+void RenderingDevice::DestroyLogicalDevice()
 {
     if (m_logicalDevice != VK_NULL_HANDLE)
     {
@@ -645,7 +597,7 @@ void RenderingDevice::destroyLogicalDevice()
     }
 }
 
-void RenderingDevice::destroyPhysicalDevice()
+void RenderingDevice::DestroyPhysicalDevice()
 {
     if (m_physicalDevice != VK_NULL_HANDLE)
     {
@@ -653,7 +605,7 @@ void RenderingDevice::destroyPhysicalDevice()
     }
 }
 
-void RenderingDevice::destroyDebugMessenger()
+void RenderingDevice::DestroyDebugMessenger()
 {
     if (m_debugMessenger != VK_NULL_HANDLE)
     {
@@ -662,7 +614,7 @@ void RenderingDevice::destroyDebugMessenger()
     }
 }
 
-void RenderingDevice::destroyInstance()
+void RenderingDevice::DestroyInstance()
 {
     if (m_instance != VK_NULL_HANDLE)
     {
@@ -671,7 +623,7 @@ void RenderingDevice::destroyInstance()
     }
 }
 
-bool RenderingDevice::findPreferredColorFormat()
+bool RenderingDevice::FindPreferredColorFormat()
 {
     std::string typeString = "none";
     for (const auto& format : m_supportedColorFormats)
@@ -717,11 +669,11 @@ bool RenderingDevice::findPreferredColorFormat()
     }
 
     m_colorFormat = m_supportedColorFormats.empty() ? VK_FORMAT_UNDEFINED : m_supportedColorFormats.front();
-    Printer::warn("Attempt to find a suitable color format for type " + typeString + " failed. Using fallback format: " + std::to_string(m_colorFormat));
+    Printer::LogWarning("Attempt to find a suitable color format for type " + typeString + " failed. Using fallback format: " + std::to_string(m_colorFormat));
     return m_colorFormat != VK_FORMAT_UNDEFINED;
 }
 
-bool RenderingDevice::findBestDepthFormat()
+bool RenderingDevice::FindBestDepthFormat()
 {
     // Prioritize commonly used depth formats
     for (const auto& format : m_supportedDepthFormats) {
@@ -738,10 +690,10 @@ bool RenderingDevice::findBestDepthFormat()
     return m_depthFormat != VK_FORMAT_UNDEFINED;
 }
 
-VkBool32 RenderingDevice::debugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+VkBool32 RenderingDevice::DebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                  VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                                                  void *pUserData)
 {
-    Printer::print("[VULKAN]: " + std::string(pCallbackData->pMessage));
+    Printer::Log("[VULKAN]: " + std::string(pCallbackData->pMessage));
     return VK_FALSE;
 }

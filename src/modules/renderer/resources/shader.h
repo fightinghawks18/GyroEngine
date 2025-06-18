@@ -7,30 +7,32 @@
 #include <string>
 #include <volk.h>
 #include "utilities/shader.h"
-#include "device_resource.h"
+class RenderingDevice;
 
-class Shader : public IDeviceResource {
+class Shader  {
 public:
-    explicit Shader(RenderingDevice& device): IDeviceResource(device) {}
-    ~Shader() override { Shader::cleanup(); }
+    explicit Shader(RenderingDevice& device): m_device(device) {}
+    ~Shader() { Cleanup(); }
 
-    Shader& setShaderPath(const std::string& path);
+    Shader& SetShaderPath(const std::string& path);
 
-    bool init() override;
-    void cleanup() override;
+    bool Init();
+    void Cleanup();
 
-    [[nodiscard]] VkShaderModule getShaderModule() const
+    [[nodiscard]] VkShaderModule GetShaderModule() const
     {
         return m_shaderModule;
     }
 
-    [[nodiscard]] std::string getShaderPath() const
+    [[nodiscard]] std::string GetShaderPath() const
     {
         return m_shaderPath;
     }
 private:
+    RenderingDevice& m_device;
+
     VkShaderModule m_shaderModule = VK_NULL_HANDLE;
     std::string m_shaderPath;
 
-    bool createShader();
+    bool CreateShader();
 };

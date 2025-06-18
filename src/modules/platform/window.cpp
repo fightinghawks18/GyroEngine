@@ -10,10 +10,10 @@ Window::Window()
 
 Window::~Window()
 {
-    destroy();
+    Destroy();
 }
 
-bool Window::create()
+bool Window::Init()
 {
     m_window = SDL_CreateWindow("Gyro", 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
     if (!m_window)
@@ -24,7 +24,7 @@ bool Window::create()
     return true;
 }
 
-void Window::destroy()
+void Window::Destroy()
 {
     if (m_window)
     {
@@ -34,7 +34,7 @@ void Window::destroy()
     m_requestedQuit = false;
 }
 
-void Window::update()
+void Window::Update()
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))

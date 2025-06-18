@@ -24,55 +24,55 @@ int main()
         return -1;
     }
     // Compile shaders first
-    shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/simple_object.vert",
+    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/simple_object.vert",
                                      shaderc_vertex_shader);
-    shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/simple_object.frag",
+    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/simple_object.frag",
                                      shaderc_fragment_shader);
-    shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/blur_h.frag",
+    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/blur_h.frag",
                                      shaderc_fragment_shader);
-    shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/blur_v.frag",
+    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/blur_v.frag",
                                      shaderc_fragment_shader);
-    shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/fullscreen_quad.vert",
+    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/fullscreen_quad.vert",
                                      shaderc_vertex_shader);
-    shaderutils::compileShaderToFile(utils::getExecutableDir() + "/content/shaders/invert_color.frag",
+    shaderutils::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/invert_color.frag",
                                      shaderc_vertex_shader);
 
     auto window = std::make_unique<Window>();
-    if (!window->create())
+    if (!window->Init())
     {
         std::cerr << "Failed to create window." << std::endl;
         return -1;
     }
 
     auto device = std::make_unique<RenderingDevice>();
-    if (!device->init())
+    if (!device->Init())
     {
         std::cerr << "Failed to initialize rendering device." << std::endl;
         return -1;
     }
     auto renderer = std::make_shared<Renderer>(*device);
-    if (!renderer->init(window.get()))
+    if (!renderer->Init(window.get()))
     {
         std::cerr << "Failed to initialize renderer." << std::endl;
         return -1;
     }
 
 
-    while (!window->isRequestedQuit())
+    while (!window->HasRequestedQuit())
     {
-        window->update();
-        if (window->isValid())
+        window->Update();
+        if (window->IsWindowAlive())
         {
-            if (renderer->beginFrame())
+            if (renderer->RecordFrame())
             {
                 Viewport viewport{};
-                renderer->bindViewport(viewport);
-                renderer->beginRendering();
-                renderer->endRendering();
-                renderer->endFrame();
+                renderer->BindViewport(viewport);
+                renderer->StartRender();
+                renderer->EndRender();
+                renderer->SubmitFrame();
             } else
             {
-                renderer->advanceFrame();
+                renderer->NextFrameIndex();
             }
         } else
         {

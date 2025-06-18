@@ -7,46 +7,48 @@
 #include <volk.h>
 
 #include "descriptor_manager.h"
-#include "device_resource.h"
 #include "push_constant.h"
 #include "utilities/pipeline.h"
 
+class RenderingDevice;
 
-class Pipeline : public IDeviceResource {
+class Pipeline  {
 public:
-    explicit Pipeline(RenderingDevice& device): IDeviceResource(device) {}
-    ~Pipeline() override { Pipeline::cleanup(); }
+    explicit Pipeline(RenderingDevice& device): m_device(device) {}
+    ~Pipeline() { Cleanup(); }
 
-    Pipeline& setDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
-    Pipeline& clearConfig();
-    Pipeline& setColorFormat(VkFormat colorFormat);
+    Pipeline& SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
+    Pipeline& ClearConfig();
+    Pipeline& SetColorFormat(VkFormat colorFormat);
 
-    bool init() override;
-    void cleanup() override;
+    bool Init();
+    void Cleanup();
 
-    void bind(const FrameContext& frameContext);
-    void drawQuad(const FrameContext& frameContext);
+    void Bind(const FrameContext& frameContext);
+    void DrawFullscreenQuad(const FrameContext& frameContext);
 
-    [[nodiscard]] pipelineutils::PipelineConfig& getPipelineConfig()
+    [[nodiscard]] pipelineutils::PipelineConfig& GetPipelineConfig()
     {
         return m_pipelineConfig;
     }
 
-    [[nodiscard]] VkPipeline getPipeline() const
+    [[nodiscard]] VkPipeline GetPipeline() const
     {
         return m_pipeline;
     }
 
-    [[nodiscard]] VkPipelineLayout getPipelineLayout() const
+    [[nodiscard]] VkPipelineLayout GetPipelineLayout() const
     {
         return m_pipelineLayout;
     }
 
-    [[nodiscard]] std::shared_ptr<DescriptorManager> getDescriptorManager() const
+    [[nodiscard]] std::shared_ptr<DescriptorManager> GetDescriptorManager() const
     {
         return m_descriptorManager;
     }
 private:
+    RenderingDevice& m_device;
+
     VkPipeline m_pipeline = VK_NULL_HANDLE;
     VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
     std::shared_ptr<DescriptorManager> m_descriptorManager;
@@ -59,6 +61,6 @@ private:
     std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
     std::vector<VkPushConstantRange> m_pushConstantRanges;
 
-    bool buildPipelineLayout();
-    bool buildPipeline();
+    bool BuildPipelineLayout();
+    bool BuildPipeline();
 };

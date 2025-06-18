@@ -6,15 +6,15 @@
 
 Maid::~Maid()
 {
-    cleanup();
+    Cleanup();
 }
 
-void Maid::add(const std::function<void()>& task)
+void Maid::Add(const std::function<void()>& task)
 {
     m_tasks.push(task);
 }
 
-void Maid::cleanup()
+void Maid::Cleanup()
 {
     while (!m_tasks.empty()) {
         m_tasks.top()();

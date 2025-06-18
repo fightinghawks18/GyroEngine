@@ -25,7 +25,7 @@ namespace types
         glm::vec3 rotation;
         glm::vec3 scale;
 
-        [[nodiscard]] glm::mat4 toMatrix() const
+        [[nodiscard]] glm::mat4 ToMatrix() const
         {
             glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
             glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));

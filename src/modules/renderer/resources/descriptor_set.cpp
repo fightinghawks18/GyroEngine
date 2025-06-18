@@ -7,37 +7,37 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
-DescriptorSet& DescriptorSet::setLayout(VkDescriptorSetLayout layout)
+DescriptorSet& DescriptorSet::SetLayout(VkDescriptorSetLayout layout)
 {
     m_layout = layout;
     return *this;
 }
 
-DescriptorSet& DescriptorSet::setPool(VkDescriptorPool pool)
+DescriptorSet& DescriptorSet::SetPool(VkDescriptorPool pool)
 {
     m_descriptorPool = pool;
     return *this;
 }
 
-bool DescriptorSet::init()
+bool DescriptorSet::Init()
 {
     if (m_descriptorSet != VK_NULL_HANDLE)
     {
         return false;
     }
-    return createDescriptorSet();
+    return CreateDescriptorSet();
 }
 
-void DescriptorSet::cleanup()
+void DescriptorSet::Cleanup()
 {
     if (m_descriptorSet != VK_NULL_HANDLE)
     {
-        vkFreeDescriptorSets(m_device.getLogicalDevice(), m_descriptorPool, 1, &m_descriptorSet);
+        vkFreeDescriptorSets(m_device.GetLogicalDevice(), m_descriptorPool, 1, &m_descriptorSet);
         m_descriptorSet = VK_NULL_HANDLE;
     }
 }
 
-void DescriptorSet::bind(const FrameContext& frameContext, VkPipelineLayout layout)
+void DescriptorSet::Bind(const FrameContext& frameContext, VkPipelineLayout layout)
 {
     if (m_descriptorSet != VK_NULL_HANDLE)
     {
@@ -46,7 +46,7 @@ void DescriptorSet::bind(const FrameContext& frameContext, VkPipelineLayout layo
     }
 }
 
-void DescriptorSet::updateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
+void DescriptorSet::UpdateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range) const
 {
     VkDescriptorBufferInfo descriptorBufferInfo = {};
     descriptorBufferInfo.buffer = buffer;
@@ -62,10 +62,10 @@ void DescriptorSet::updateBuffer(uint32_t binding, VkBuffer buffer, VkDeviceSize
     descriptorWrite.descriptorCount = 1;
     descriptorWrite.pBufferInfo = &descriptorBufferInfo;
 
-    vkUpdateDescriptorSets(m_device.getLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
+    vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-void DescriptorSet::updateImage(uint32_t binding, VkImageView view, VkSampler sampler) const
+void DescriptorSet::UpdateImage(uint32_t binding, VkImageView view, VkSampler sampler) const
 {
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.sampler = sampler;
@@ -81,10 +81,10 @@ void DescriptorSet::updateImage(uint32_t binding, VkImageView view, VkSampler sa
     descriptorWrite.descriptorCount = 1;
     descriptorWrite.pImageInfo = &descriptorImageInfo;
 
-    vkUpdateDescriptorSets(m_device.getLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
+    vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-bool DescriptorSet::createDescriptorSet()
+bool DescriptorSet::CreateDescriptorSet()
 {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -92,10 +92,10 @@ bool DescriptorSet::createDescriptorSet()
     descriptorSetAllocateInfo.descriptorSetCount = 1;
     descriptorSetAllocateInfo.pSetLayouts = &m_layout;
 
-    VkResult result = vkAllocateDescriptorSets(m_device.getLogicalDevice(), &descriptorSetAllocateInfo, &m_descriptorSet);
+    VkResult result = vkAllocateDescriptorSets(m_device.GetLogicalDevice(), &descriptorSetAllocateInfo, &m_descriptorSet);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to allocate descriptor sets");
+        Printer::LogError("Failed to allocate descriptor sets");
         return false;
     }
     return true;

@@ -23,7 +23,6 @@ add_library(RendererModule STATIC
         utilities/image.h
         resources/buffer.cpp
         resources/buffer.h
-        resources/device_resource.h
         resources/sampler.cpp
         resources/sampler.h
         resources/descriptor_manager.cpp

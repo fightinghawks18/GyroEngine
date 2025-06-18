@@ -7,53 +7,53 @@
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
-Pipeline& Pipeline::setDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager)
+Pipeline& Pipeline::SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager)
 {
     m_descriptorManager = descriptorManager;
     return *this;
 }
 
-Pipeline& Pipeline::clearConfig()
+Pipeline& Pipeline::ClearConfig()
 {
     m_pipelineConfig = {};
     return *this;
 }
 
-Pipeline& Pipeline::setColorFormat(VkFormat colorFormat)
+Pipeline& Pipeline::SetColorFormat(VkFormat colorFormat)
 {
     m_pipelineConfig.colorFormat = colorFormat;
     return *this;
 }
 
 
-bool Pipeline::init()
+bool Pipeline::Init()
 {
     if (m_pipeline != VK_NULL_HANDLE)
     {
         return false;
     }
-    if (!buildPipelineLayout()) return false;
-    if (!buildPipeline()) return false;
+    if (!BuildPipelineLayout()) return false;
+    if (!BuildPipeline()) return false;
     return true;
 }
 
-void Pipeline::cleanup()
+void Pipeline::Cleanup()
 {
-    m_device.waitIdle();
+    m_device.WaitForIdle();
     if (m_pipeline != VK_NULL_HANDLE)
     {
-        vkDestroyPipeline(m_device.getLogicalDevice(), m_pipeline, nullptr);
+        vkDestroyPipeline(m_device.GetLogicalDevice(), m_pipeline, nullptr);
         m_pipeline = VK_NULL_HANDLE;
     }
 
     if (m_pipelineLayout != VK_NULL_HANDLE)
     {
-        vkDestroyPipelineLayout(m_device.getLogicalDevice(), m_pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(m_device.GetLogicalDevice(), m_pipelineLayout, nullptr);
         m_pipelineLayout = VK_NULL_HANDLE;
     }
 }
 
-void Pipeline::bind(const FrameContext& frameContext)
+void Pipeline::Bind(const FrameContext& frameContext)
 {
     if (m_pipeline != VK_NULL_HANDLE)
     {
@@ -62,10 +62,10 @@ void Pipeline::bind(const FrameContext& frameContext)
 
     if (m_descriptorManager)
     {
-        auto descriptorSets = m_descriptorManager->getDescriptorSets();
+        auto descriptorSets = m_descriptorManager->GetDescriptorSets();
         for (auto& descriptorSet : descriptorSets)
         {
-            descriptorSet->bind(frameContext, m_pipelineLayout);
+            descriptorSet->Bind(frameContext, m_pipelineLayout);
         }
     }
 
@@ -73,12 +73,12 @@ void Pipeline::bind(const FrameContext& frameContext)
     {
         for (const auto& pushConstant : m_pipelineConfig.pushConstants)
         {
-            pushConstant->push(frameContext.cmd, m_pipelineLayout);
+            pushConstant->Push(frameContext.cmd, m_pipelineLayout);
         }
     }
 }
 
-void Pipeline::drawQuad(const FrameContext &frameContext)
+void Pipeline::DrawFullscreenQuad(const FrameContext &frameContext)
 {
     VkCommandBuffer cmd = frameContext.cmd;
     if (m_pipelineConfig.inputAssemblyState.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -91,7 +91,7 @@ void Pipeline::drawQuad(const FrameContext &frameContext)
     }
 }
 
-bool Pipeline::buildPipelineLayout()
+bool Pipeline::BuildPipelineLayout()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -99,11 +99,11 @@ bool Pipeline::buildPipelineLayout()
     m_descriptorSetLayouts.clear();
     if (m_descriptorManager)
     {
-        auto descriptorLayouts = m_descriptorManager->getDescriptorLayouts();
+        auto descriptorLayouts = m_descriptorManager->GetDescriptorLayouts();
         m_descriptorSetLayouts.reserve(descriptorLayouts.size());
         for (auto& descriptorLayout : descriptorLayouts)
         {
-            m_descriptorSetLayouts.push_back(descriptorLayout->getDescriptorSetLayout());
+            m_descriptorSetLayouts.push_back(descriptorLayout->GetDescriptorSetLayout());
         }
 
         pipelineLayoutInfo.setLayoutCount = m_descriptorSetLayouts.size();
@@ -123,9 +123,9 @@ bool Pipeline::buildPipelineLayout()
         for (const auto& pushConstant : m_pipelineConfig.pushConstants)
         {
             VkPushConstantRange pushConstantRange = {};
-            pushConstantRange.stageFlags = pushConstant->getStageFlags();
-            pushConstantRange.offset = pushConstant->getOffset();
-            pushConstantRange.size = pushConstant->getSize();
+            pushConstantRange.stageFlags = pushConstant->GetStageFlags();
+            pushConstantRange.offset = pushConstant->GetOffset();
+            pushConstantRange.size = pushConstant->GetSize();
             m_pushConstantRanges.push_back(pushConstantRange);
         }
         pipelineLayoutInfo.pushConstantRangeCount = m_pushConstantRanges.size();
@@ -136,16 +136,16 @@ bool Pipeline::buildPipelineLayout()
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
     }
 
-    if (vkCreatePipelineLayout(m_device.getLogicalDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) !=
+    if (vkCreatePipelineLayout(m_device.GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) !=
         VK_SUCCESS)
     {
-        Printer::error("Failed to create pipeline layout");
+        Printer::LogError("Failed to create pipeline layout");
         return false;
     }
     return true;
 }
 
-bool Pipeline::buildPipeline()
+bool Pipeline::BuildPipeline()
 {
     m_pipelineConfig.pipelineLayout = m_pipelineLayout;
 
@@ -232,8 +232,8 @@ bool Pipeline::buildPipeline()
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkFormat colorFormat = m_pipelineConfig.colorFormat;
-    VkFormat depthFormat = m_device.getPreferredDepthFormat();
-    VkFormat stencilFormat = m_device.getPreferredStencilFormat();
+    VkFormat depthFormat = m_device.GetPreferredDepthFormat();
+    VkFormat stencilFormat = m_device.GetPreferredStencilFormat();
 
     VkPipelineRenderingCreateInfoKHR renderingInfo = {};
     renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
@@ -292,11 +292,11 @@ bool Pipeline::buildPipeline()
     pipelineInfo.renderPass = VK_NULL_HANDLE;
     pipelineInfo.subpass = 0;
 
-    VkResult result = vkCreateGraphicsPipelines(m_device.getLogicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+    VkResult result = vkCreateGraphicsPipelines(m_device.GetLogicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                                 &m_pipeline);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to create pipeline");
+        Printer::LogError("Failed to create pipeline");
         return false;
     }
     return true;

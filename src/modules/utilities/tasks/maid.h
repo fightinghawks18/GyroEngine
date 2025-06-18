@@ -13,8 +13,8 @@ public:
     Maid() = default;
     ~Maid();
 
-    void add(const std::function<void()>& task);
-    void cleanup();
+    void Add(const std::function<void()>& task);
+    void Cleanup();
 private:
     std::stack<std::function<void()>> m_tasks;
 };

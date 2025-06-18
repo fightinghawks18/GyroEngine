@@ -5,32 +5,34 @@
 #pragma once
 
 #include <volk.h>
-#include "device_resource.h"
+class RenderingDevice;
 
-class Sampler final : public IDeviceResource {
+class Sampler final  {
 public:
-    explicit Sampler(RenderingDevice& device): IDeviceResource(device) {}
-    ~Sampler() override { Sampler::cleanup(); }
+    explicit Sampler(RenderingDevice& device): m_device(device) {}
+    ~Sampler() { Cleanup(); }
 
-    Sampler& setMinFilter(VkFilter minFilter);
-    Sampler& setMagFilter(VkFilter magFilter);
-    Sampler& setAddressModeU(VkSamplerAddressMode modeU);
-    Sampler& setAddressModeV(VkSamplerAddressMode modeV);
-    Sampler& setAddressModeW(VkSamplerAddressMode modeW);
-    Sampler& setMipLodBias(float bias);
-    Sampler& setMinLod(float minLod);
-    Sampler& setMaxLod(float maxLod);
-    Sampler& setAnisotropy(bool enable);
-    Sampler& setAnisotropyLevel(float level);
-    Sampler& setCompareOp(VkCompareOp compareOp);
+    Sampler& SetMinFilter(VkFilter minFilter);
+    Sampler& SetMagFilter(VkFilter magFilter);
+    Sampler& SetAddressModeU(VkSamplerAddressMode modeU);
+    Sampler& SetAddressModeV(VkSamplerAddressMode modeV);
+    Sampler& SetAddressModeW(VkSamplerAddressMode modeW);
+    Sampler& SetMipLodBias(float bias);
+    Sampler& SetMinLod(float minLod);
+    Sampler& SetMaxLod(float maxLod);
+    Sampler& SetAnisotropy(bool enable);
+    Sampler& SetAnisotropyLevel(float level);
+    Sampler& SetCompareOp(VkCompareOp compareOp);
 
-    bool init() override;
-    void cleanup() override;
+    bool Init();
+    void Cleanup();
 
-    [[nodiscard]] VkSampler getSampler() const {
+    [[nodiscard]] VkSampler GetSampler() const {
         return m_sampler;
     }
 private:
+    RenderingDevice& m_device;
+
     VkSampler m_sampler = VK_NULL_HANDLE;
 
     VkFilter m_minFilter = VK_FILTER_LINEAR;
@@ -46,5 +48,5 @@ private:
     float m_anisotropyLevel = 0.0f;
     VkCompareOp m_compareOp = VK_COMPARE_OP_ALWAYS;
 
-    bool createSampler();
+    bool CreateSampler();
 };

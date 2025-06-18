@@ -15,34 +15,34 @@ public:
     Window();
     ~Window();
 
-    bool create();
-    void destroy();
+    bool Init();
+    void Destroy();
 
-    void update();
+    void Update();
 
-    [[nodiscard]] bool isValid() const {
+    [[nodiscard]] bool IsWindowAlive() const {
         return m_window != nullptr;
     }
 
-    [[nodiscard]] bool isRequestedQuit() const {
+    [[nodiscard]] bool HasRequestedQuit() const {
         return m_requestedQuit;
     }
 
-    [[nodiscard]] bool isFullscreen() const {
+    [[nodiscard]] bool IsFullscreen() const {
         return SDL_GetWindowFlags(m_window) & SDL_WINDOW_FULLSCREEN;
     }
 
-    [[nodiscard]] SDL_Window* getWindow() const {
+    [[nodiscard]] SDL_Window* GetWindowHandle() const {
         return m_window;
     }
 
-    [[nodiscard]] uint32_t getWidth() const {
+    [[nodiscard]] uint32_t GetWindowWidth() const {
         int width, height;
         SDL_GetWindowSize(m_window, &width, &height);
         return static_cast<uint32_t>(width);
     }
 
-    [[nodiscard]] uint32_t getHeight() const {
+    [[nodiscard]] uint32_t GetWindowHeight() const {
         int width, height;
         SDL_GetWindowSize(m_window, &width, &height);
         return static_cast<uint32_t>(height);
@@ -50,6 +50,4 @@ public:
 private:
     SDL_Window* m_window = nullptr;
     bool m_requestedQuit = false;
-
-
 };

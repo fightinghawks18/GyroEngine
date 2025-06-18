@@ -6,7 +6,7 @@
 
 #include <vector>
 #include <volk.h>
-#include "device_resource.h"
+class RenderingDevice;
 
 struct PoolSize
 {
@@ -14,29 +14,31 @@ struct PoolSize
     uint32_t maxSets;
 };
 
-class DescriptorPool : public IDeviceResource {
+class DescriptorPool  {
 public:
-    explicit DescriptorPool(RenderingDevice& device) : IDeviceResource(device) {}
-    ~DescriptorPool() override { DescriptorPool::cleanup(); }
+    explicit DescriptorPool(RenderingDevice& device) : m_device(device) {}
+    ~DescriptorPool() { Cleanup(); }
 
-    DescriptorPool& setPoolSize(const std::vector<PoolSize>& poolSizes);
-    DescriptorPool& addPoolSize(PoolSize poolSize);
-    DescriptorPool& clearPoolSizes();
+    DescriptorPool& SetPoolSize(const std::vector<PoolSize>& poolSizes);
+    DescriptorPool& AddPoolSize(PoolSize poolSize);
+    DescriptorPool& ClearPoolSizes();
 
-    DescriptorPool& setMaxSets(uint32_t maxSets);
+    DescriptorPool& SetMaxSets(uint32_t maxSets);
 
-    bool init() override;
-    void cleanup() override;
+    bool Init();
+    void Cleanup();
 
-    [[nodiscard]] VkDescriptorPool getDescriptorPool() const
+    [[nodiscard]] VkDescriptorPool GetDescriptorPool() const
     {
         return m_descriptorPool;
     }
 private:
+    RenderingDevice& m_device;
+
     VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
 
     uint32_t m_maxSets = 0;
     std::vector<PoolSize> m_descriptorPoolSizes;
 
-    bool createDescriptorPool();
+    bool CreateDescriptorPool();
 };

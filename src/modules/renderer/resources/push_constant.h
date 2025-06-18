@@ -7,24 +7,24 @@
 #include <cstring>
 #include <volk.h>
 
-#include "device_resource.h"
+class RenderingDevice;
 
 class PushConstant {
 public:
-    PushConstant& setSize(uint32_t size) {
+    PushConstant& SetSize(uint32_t size) {
         m_size = size;
         return *this;
     }
-    PushConstant& setStageFlags(VkShaderStageFlags stageFlags) {
+    PushConstant& SetStageFlags(VkShaderStageFlags stageFlags) {
         m_stageFlags = stageFlags;
         return *this;
     }
-    PushConstant& setOffset(uint32_t offset) {
+    PushConstant& SetOffset(uint32_t offset) {
         m_offset = offset;
         return *this;
     }
 
-    void set(const void* data, uint32_t size, uint32_t offset = 0)
+    void Set(const void* data, uint32_t size, uint32_t offset = 0)
     {
         if (m_data) delete[] static_cast<uint8_t*>(m_data);
         m_data = new uint8_t[size];
@@ -33,21 +33,21 @@ public:
         m_offset = offset;
     }
 
-    void push(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout)
+    void Push(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout)
     {
         vkCmdPushConstants(cmd, pipelineLayout, m_stageFlags, m_offset, m_size, m_data);
     }
 
-    [[nodiscard]] uint32_t getSize() const {
+    [[nodiscard]] uint32_t GetSize() const {
         return m_size;
     }
-    [[nodiscard]] uint32_t getOffset() const {
+    [[nodiscard]] uint32_t GetOffset() const {
         return m_offset;
     }
-    [[nodiscard]] VkShaderStageFlags getStageFlags() const {
+    [[nodiscard]] VkShaderStageFlags GetStageFlags() const {
         return m_stageFlags;
     }
-    [[nodiscard]] void* getData() const {
+    [[nodiscard]] void* GetData() const {
         return m_data;
     }
 private:

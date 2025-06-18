@@ -8,122 +8,122 @@
 
 Renderer::~Renderer()
 {
-    cleanup();
+    Cleanup();
 }
 
-bool Renderer::init(Window* window)
+bool Renderer::Init(Window* window)
 {
     m_window = window;
-    m_surface = m_device.createSurface(m_window);
-    m_presentQueue = m_device.getPresentQueue(m_surface).queue;
+    m_surface = m_device.CreateSurfaceFromWindow(m_window);
+    m_presentQueue = m_device.GetPresentQueueFromSurface(m_surface).queue;
 
-    if (!createSwapchain()) return false;
-    if (!createSwapchainImages()) return false;
-    if (!createImages()) return false;
-    if (!createSampler()) return false;
-    if (!createCommandBuffers()) return false;
-    if (!createSyncObjects()) return false;
+    if (!CreateSwapchain()) return false;
+    if (!CreateSwapchainImages()) return false;
+    if (!CreateImages()) return false;
+    if (!CreateSampler()) return false;
+    if (!CreateCommandBuffers()) return false;
+    if (!CreateSyncObjects()) return false;
     return true;
 }
 
-void Renderer::cleanup()
+void Renderer::Cleanup()
 {
-    m_device.waitIdle();
-    destroySwapchain();
+    m_device.WaitForIdle();
+    DestroySwapchain();
     if (m_surface != VK_NULL_HANDLE)
     {
-        vkDestroySurfaceKHR(m_device.getInstance(), m_surface, nullptr);
+        vkDestroySurfaceKHR(m_device.GetInstance(), m_surface, nullptr);
         m_surface = VK_NULL_HANDLE;
     }
-    destroySwapchainImages();
-    destroyImages();
-    destroySampler();
-    destroyCommandBuffers();
-    destroySyncObjects();
+    DestroySwapchainImages();
+    DestroyImages();
+    DestroySampler();
+    DestroyCommandBuffers();
+    DestroySyncObjects();
 }
 
-bool Renderer::recreate()
+bool Renderer::Resize()
 {
-    m_device.waitIdle();
+    m_device.WaitForIdle();
 
-    destroyCommandBuffers();
-    destroySyncObjects();
-    destroyImages();
+    DestroyCommandBuffers();
+    DestroySyncObjects();
+    DestroyImages();
 
-    if (!createSwapchain()) return false;
-    if (!createSwapchainImages()) return false;
-    if (!createImages()) return false;
-    if (!createCommandBuffers()) return false;
-    if (!createSyncObjects()) return false;
+    if (!CreateSwapchain()) return false;
+    if (!CreateSwapchainImages()) return false;
+    if (!CreateImages()) return false;
+    if (!CreateCommandBuffers()) return false;
+    if (!CreateSyncObjects()) return false;
 
-    Printer::print("Recreated swapchain on frame " + std::to_string(m_currentFrame));
+    Printer::Log("Recreated swapchain on frame " + std::to_string(m_currentFrame));
     return true;
 }
 
-void Renderer::advanceFrame()
+void Renderer::NextFrameIndex()
 {
-    m_currentFrame = (m_currentFrame + 1) % m_device.getMaxFramesInFlight();
+    m_currentFrame = (m_currentFrame + 1) % m_device.GetMaxFramesInFlight();
 }
 
-bool Renderer::beginFrame()
+bool Renderer::RecordFrame()
 {
-    return startRecord();
+    return StartRecord();
 }
 
-void Renderer::bindViewport(const Viewport& viewport)
+void Renderer::BindViewport(const Viewport& viewport)
 {
     m_viewport = viewport;
 }
 
-void Renderer::bindOutput(const VkRenderingInfoKHR &renderingInfo)
+void Renderer::BindRenderingInfo(const VkRenderingInfoKHR &renderingInfo)
 {
     m_renderingInfo = renderingInfo;
 }
 
-void Renderer::beginRendering()
+void Renderer::StartRender()
 {
     vkCmdBeginRenderingKHR(m_commandBuffers[m_currentFrame], &m_renderingInfo);
 }
 
-void Renderer::endRendering()
+void Renderer::EndRender()
 {
     vkCmdEndRenderingKHR(m_commandBuffers[m_currentFrame]);
 }
 
-void Renderer::endFrame()
+void Renderer::SubmitFrame()
 {
-    endRecord();
-    submitRender();
-    presentRender();
+    EndRecord();
+    SubmitRender();
+    PresentRender();
 }
 
-bool Renderer::startRecord()
+bool Renderer::StartRecord()
 {
     if (m_needsRecreation)
     {
-        if (!recreate())
+        if (!Resize())
         {
-            Printer::error("Failed to recreate swapchain");
+            Printer::LogError("Failed to recreate swapchain");
             return false;
         }
         m_needsRecreation = false;
     }
 
-    VkResult waitResult = vkWaitForFences(m_device.getLogicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, 100000000);
+    VkResult waitResult = vkWaitForFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, 100000000);
     if (waitResult == VK_TIMEOUT)
     {
-        Printer::error("Fence timed out on frame index " + std::to_string(m_currentFrame));
+        Printer::LogError("Fence timed out on frame index " + std::to_string(m_currentFrame));
         return false;
     } if (waitResult != VK_SUCCESS)
     {
-        Printer::error("Failed to wait for fence: " + std::to_string(waitResult));
+        Printer::LogError("Failed to wait for fence: " + std::to_string(waitResult));
         return false;
     }
 
-    vkResetFences(m_device.getLogicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
+    vkResetFences(m_device.GetLogicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
 
     VkResult imageAcquireResult = vkAcquireNextImageKHR(
-        m_device.getLogicalDevice(),
+        m_device.GetLogicalDevice(),
         m_swapchain,
         UINT64_MAX,
         m_imageAvailableSemaphores[m_currentFrame],
@@ -131,17 +131,17 @@ bool Renderer::startRecord()
         &m_currentImageIndex
     );
 
-    m_swapchainImages[m_currentImageIndex]->makeColor();
+    m_swapchainImages[m_currentImageIndex]->MakeColor();
 
     if (imageAcquireResult == VK_ERROR_OUT_OF_DATE_KHR
         || imageAcquireResult == VK_SUBOPTIMAL_KHR)
     {
         m_needsRecreation = true;
-        Printer::print("Image acquire out of date or suboptimal, recreating on frame " + std::to_string((m_currentFrame + 1) % m_device.getMaxFramesInFlight() ));
+        Printer::Log("Image acquire out of date or suboptimal, recreating on frame " + std::to_string((m_currentFrame + 1) % m_device.GetMaxFramesInFlight() ));
         return false;
     } if (imageAcquireResult != VK_SUCCESS)
     {
-        Printer::error("Failed to acquire swapchain image: " + std::to_string(imageAcquireResult));
+        Printer::LogError("Failed to acquire swapchain image: " + std::to_string(imageAcquireResult));
         return false;
     }
 
@@ -152,7 +152,7 @@ bool Renderer::startRecord()
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
     {
-        Printer::error("Failed to begin command buffer recording");
+        Printer::LogError("Failed to begin command buffer recording");
         return false;
     }
 
@@ -177,7 +177,7 @@ bool Renderer::startRecord()
     return true;
 }
 
-void Renderer::presentRender()
+void Renderer::PresentRender()
 {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -194,18 +194,18 @@ void Renderer::presentRender()
         || result == VK_SUBOPTIMAL_KHR)
     {
         m_needsRecreation = true;
-        Printer::print("Swapchain out of date or suboptimal, recreating on frame " + std::to_string(m_currentFrame));
+        Printer::Log("Swapchain out of date or suboptimal, recreating on frame " + std::to_string(m_currentFrame));
     } else if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to present swapchain image: " + std::to_string(result));
+        Printer::LogError("Failed to present swapchain image: " + std::to_string(result));
     }
 
-    advanceFrame();
+    NextFrameIndex();
 }
 
-void Renderer::submitRender()
+void Renderer::SubmitRender()
 {
-    m_swapchainImages[m_currentImageIndex]->makePresent();
+    m_swapchainImages[m_currentImageIndex]->MakePresent();
 
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -224,30 +224,30 @@ void Renderer::submitRender()
 
     if (vkQueueSubmit(m_presentQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS)
     {
-        Printer::error("Failed to submit command buffer");
+        Printer::LogError("Failed to submit command buffer");
     }
 }
 
-void Renderer::endRecord()
+void Renderer::EndRecord()
 {
     VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
     {
-        Printer::error("Failed to end command buffer recording");
+        Printer::LogError("Failed to end command buffer recording");
     }
 }
 
-bool Renderer::createSwapchain()
+bool Renderer::CreateSwapchain()
 {
     // Query surface capabilities
     // ^ Ensures that moving to a different monitor with a different colorspace
     // ^ or requirements doesn't cause any problems
-    m_surfaceFormat = rendererutils::chooseBestSurfaceFormat(m_device.getPhysicalDevice(), m_surface);
-    m_presentMode = rendererutils::chooseBestPresentMode(m_device.getPhysicalDevice(), m_surface);
+    m_surfaceFormat = rendererutils::chooseBestSurfaceFormat(m_device.GetPhysicalDevice(), m_surface);
+    m_presentMode = rendererutils::ChooseBestPresentMode(m_device.GetPhysicalDevice(), m_surface);
     m_swapchainImageFormat = m_surfaceFormat.format;
-    m_swapchainExtent = rendererutils::chooseBestExtent(m_device.getPhysicalDevice(), m_surface, m_window->getWidth(), m_window->getHeight());
+    m_swapchainExtent = rendererutils::ChooseBestExtent(m_device.GetPhysicalDevice(), m_surface, m_window->GetWindowWidth(), m_window->GetWindowHeight());
 
-    uint32_t minImageCount = rendererutils::getMinImageCount(m_device.getPhysicalDevice(), m_surface);
+    uint32_t minImageCount = rendererutils::getMinImageCount(m_device.GetPhysicalDevice(), m_surface);
 
     VkSwapchainCreateInfoKHR swapchainInfo{};
     swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -266,16 +266,16 @@ bool Renderer::createSwapchain()
     swapchainInfo.oldSwapchain = m_swapchain;
 
     VkSwapchainKHR newSwapchain = VK_NULL_HANDLE;
-    if (vkCreateSwapchainKHR(m_device.getLogicalDevice(), &swapchainInfo, nullptr, &newSwapchain) != VK_SUCCESS)
+    if (vkCreateSwapchainKHR(m_device.GetLogicalDevice(), &swapchainInfo, nullptr, &newSwapchain) != VK_SUCCESS)
     {
-        Printer::error("Failed to create swapchain");
+        Printer::LogError("Failed to create swapchain");
         return false;
     }
 
     if (m_swapchain)
     {
-        destroySwapchain();
-        destroySwapchainImages();
+        DestroySwapchain();
+        DestroySwapchainImages();
     }
 
     m_swapchain = newSwapchain;
@@ -283,12 +283,12 @@ bool Renderer::createSwapchain()
     return true;
 }
 
-bool Renderer::createSwapchainImages()
+bool Renderer::CreateSwapchainImages()
 {
     uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(m_device.getLogicalDevice(), m_swapchain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(m_device.GetLogicalDevice(), m_swapchain, &imageCount, nullptr);
     std::vector<VkImage> swapchainVkImages(imageCount);
-    vkGetSwapchainImagesKHR(m_device.getLogicalDevice(), m_swapchain, &imageCount, swapchainVkImages.data());
+    vkGetSwapchainImagesKHR(m_device.GetLogicalDevice(), m_swapchain, &imageCount, swapchainVkImages.data());
 
     m_swapchainImages.reserve(imageCount);
 
@@ -313,62 +313,62 @@ bool Renderer::createSwapchainImages()
 
         VkImageView imageView = VK_NULL_HANDLE;
 
-        if (vkCreateImageView(m_device.getLogicalDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+        if (vkCreateImageView(m_device.GetLogicalDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
         {
-            Printer::error("Failed to create image view");
+            Printer::LogError("Failed to create image view");
             return false;
         }
 
-        image->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        image->SetAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
 
-        if (!image->init(swapchainVkImages[i], imageView))
+        if (!image->Init(swapchainVkImages[i], imageView))
         {
-            Printer::error("Failed to initialize swapchain image");
+            Printer::LogError("Failed to initialize swapchain image");
             return false;
         }
 
-        image->makePresent();
+        image->MakePresent();
         m_swapchainImages.push_back(image);
     }
     return true;
 }
 
-bool Renderer::createImages()
+bool Renderer::CreateImages()
 {
-    for (uint32_t i = 0; i < m_device.getMaxFramesInFlight(); ++i)
+    for (uint32_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
     {
         auto colorImage = new Image(m_device);
         auto depthImage = new Image(m_device);
         auto pipelineImage = new Image(m_device);
 
-        colorImage->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
-            .setFormat(m_swapchainImageFormat);
+        colorImage->SetAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+            .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+            .SetExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .SetFormat(m_swapchainImageFormat);
 
-        depthImage->setAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
-            .setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
-            .setFormat(m_device.getPreferredDepthFormat());
+        depthImage->SetAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
+            .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+            .SetExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .SetFormat(m_device.GetPreferredDepthFormat());
 
-        pipelineImage->setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-            .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
-            .setFormat(m_swapchainImageFormat);
+        pipelineImage->SetAspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+            .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+            .SetExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .SetFormat(m_swapchainImageFormat);
 
-        if (!colorImage->init(VK_NULL_HANDLE, VK_NULL_HANDLE))
+        if (!colorImage->Init(VK_NULL_HANDLE, VK_NULL_HANDLE))
         {
-            Printer::error("Failed to create color image");
+            Printer::LogError("Failed to create color image");
             return false;
         }
-        if (!depthImage->init(VK_NULL_HANDLE, VK_NULL_HANDLE))
+        if (!depthImage->Init(VK_NULL_HANDLE, VK_NULL_HANDLE))
         {
-            Printer::error("Failed to create depth image");
+            Printer::LogError("Failed to create depth image");
             return false;
         }
-        if (!pipelineImage->init(VK_NULL_HANDLE, VK_NULL_HANDLE))
+        if (!pipelineImage->Init(VK_NULL_HANDLE, VK_NULL_HANDLE))
         {
-            Printer::error("Failed to create pipeline image");
+            Printer::LogError("Failed to create pipeline image");
             return false;
         }
 
@@ -379,19 +379,19 @@ bool Renderer::createImages()
     return true;
 }
 
-bool Renderer::createSampler()
+bool Renderer::CreateSampler()
 {
     auto* sampler = new Sampler(m_device);
-    sampler->setMagFilter(VK_FILTER_LINEAR)
-           .setMinFilter(VK_FILTER_LINEAR)
-           .setAddressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-           .setAddressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-           .setAddressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-           .setAnisotropyLevel(1.0f)
-           .setAnisotropy(false);
-    if (!sampler->init())
+    sampler->SetMagFilter(VK_FILTER_LINEAR)
+           .SetMinFilter(VK_FILTER_LINEAR)
+           .SetAddressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+           .SetAddressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+           .SetAddressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+           .SetAnisotropyLevel(1.0f)
+           .SetAnisotropy(false);
+    if (!sampler->Init())
     {
-        Printer::error("Failed to create sampler");
+        Printer::LogError("Failed to create sampler");
         delete sampler;
         m_sampler = nullptr;
         return false;
@@ -400,29 +400,29 @@ bool Renderer::createSampler()
     return true;
 }
 
-bool Renderer::createCommandBuffers()
+bool Renderer::CreateCommandBuffers()
 {
-    m_commandBuffers.resize(m_device.getMaxFramesInFlight());
+    m_commandBuffers.resize(m_device.GetMaxFramesInFlight());
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_device.getCommandPool();
+    allocInfo.commandPool = m_device.GetCommandPool();
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
 
-    if (vkAllocateCommandBuffers(m_device.getLogicalDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(m_device.GetLogicalDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
     {
-        Printer::error("Failed to allocate command buffers");
+        Printer::LogError("Failed to allocate command buffers");
         return false;
     }
     return true;
 }
 
-bool Renderer::createSyncObjects()
+bool Renderer::CreateSyncObjects()
 {
-    m_imageAvailableSemaphores.resize(m_device.getMaxFramesInFlight());
-    m_renderFinishedSemaphores.resize(m_device.getMaxFramesInFlight());
-    m_inFlightFences.resize(m_device.getMaxFramesInFlight());
+    m_imageAvailableSemaphores.resize(m_device.GetMaxFramesInFlight());
+    m_renderFinishedSemaphores.resize(m_device.GetMaxFramesInFlight());
+    m_inFlightFences.resize(m_device.GetMaxFramesInFlight());
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -431,61 +431,61 @@ bool Renderer::createSyncObjects()
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for (size_t i = 0; i < m_device.getMaxFramesInFlight(); ++i)
+    for (size_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
     {
-        if (vkCreateSemaphore(m_device.getLogicalDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(m_device.getLogicalDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(m_device.getLogicalDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
+        if (vkCreateSemaphore(m_device.GetLogicalDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(m_device.GetLogicalDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(m_device.GetLogicalDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
         {
-            Printer::error("Failed to create sync objects");
+            Printer::LogError("Failed to create sync objects");
             return false;
         }
     }
     return true;
 }
 
-void Renderer::destroyCommandBuffers()
+void Renderer::DestroyCommandBuffers()
 {
     for (auto& commandBuffer : m_commandBuffers)
     {
         if (commandBuffer != VK_NULL_HANDLE)
         {
-            vkFreeCommandBuffers(m_device.getLogicalDevice(), m_device.getCommandPool(), 1, &commandBuffer);
+            vkFreeCommandBuffers(m_device.GetLogicalDevice(), m_device.GetCommandPool(), 1, &commandBuffer);
             commandBuffer = VK_NULL_HANDLE;
         }
     }
     m_commandBuffers.clear();
 }
 
-void Renderer::destroySyncObjects()
+void Renderer::DestroySyncObjects()
 {
-    for (size_t i = 0; i < m_device.getMaxFramesInFlight(); ++i)
+    for (size_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
     {
         if (m_imageAvailableSemaphores[i] != VK_NULL_HANDLE)
         {
-            vkDestroySemaphore(m_device.getLogicalDevice(), m_imageAvailableSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device.GetLogicalDevice(), m_imageAvailableSemaphores[i], nullptr);
             m_imageAvailableSemaphores[i] = VK_NULL_HANDLE;
         }
         if (m_renderFinishedSemaphores[i] != VK_NULL_HANDLE)
         {
-            vkDestroySemaphore(m_device.getLogicalDevice(), m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device.GetLogicalDevice(), m_renderFinishedSemaphores[i], nullptr);
             m_renderFinishedSemaphores[i] = VK_NULL_HANDLE;
         }
         if (m_inFlightFences[i] != VK_NULL_HANDLE)
         {
-            vkDestroyFence(m_device.getLogicalDevice(), m_inFlightFences[i], nullptr);
+            vkDestroyFence(m_device.GetLogicalDevice(), m_inFlightFences[i], nullptr);
             m_inFlightFences[i] = VK_NULL_HANDLE;
         }
     }
 }
 
-void Renderer::destroySwapchainImages()
+void Renderer::DestroySwapchainImages()
 {
     for (auto& image : m_swapchainImages)
     {
         if (image)
         {
-            image->cleanup();
+            image->Cleanup();
             delete image;
             image = nullptr;
         }
@@ -493,23 +493,23 @@ void Renderer::destroySwapchainImages()
     m_swapchainImages.clear();
 }
 
-void Renderer::destroySampler()
+void Renderer::DestroySampler()
 {
     if (m_sampler)
     {
-        m_sampler->cleanup();
+        m_sampler->Cleanup();
         delete m_sampler;
         m_sampler = nullptr;
     }
 }
 
-void Renderer::destroyImages()
+void Renderer::DestroyImages()
 {
     for (auto& image : m_colorImages)
     {
         if (image)
         {
-            image->cleanup();
+            image->Cleanup();
             delete image;
             image = nullptr;
         }
@@ -520,7 +520,7 @@ void Renderer::destroyImages()
     {
         if (image)
         {
-            image->cleanup();
+            image->Cleanup();
             delete image;
             image = nullptr;
         }
@@ -531,7 +531,7 @@ void Renderer::destroyImages()
     {
         if (image)
         {
-            image->cleanup();
+            image->Cleanup();
             delete image;
             image = nullptr;
         }
@@ -539,11 +539,11 @@ void Renderer::destroyImages()
     m_pipelineImages.clear();
 }
 
-void Renderer::destroySwapchain()
+void Renderer::DestroySwapchain()
 {
     if (m_swapchain != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(m_device.getLogicalDevice(), m_swapchain, nullptr);
+        vkDestroySwapchainKHR(m_device.GetLogicalDevice(), m_swapchain, nullptr);
         m_swapchain = VK_NULL_HANDLE;
     }
 }

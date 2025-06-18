@@ -7,7 +7,7 @@
 #include <vector>
 #include <volk.h>
 
-#include "device_resource.h"
+class RenderingDevice;
 
 struct LayoutBinding
 {
@@ -18,24 +18,26 @@ struct LayoutBinding
     const VkSampler* immutableSamplers;
 };
 
-class DescriptorLayout : public IDeviceResource {
+class DescriptorLayout  {
 public:
-    explicit DescriptorLayout(RenderingDevice& device): IDeviceResource(device) {}
-    ~DescriptorLayout() override { DescriptorLayout::cleanup(); }
+    explicit DescriptorLayout(RenderingDevice& device): m_device(device) {}
+    ~DescriptorLayout() { Cleanup(); }
 
-    DescriptorLayout& addBinding(const LayoutBinding binding);
-    DescriptorLayout& clearBindings();
+    DescriptorLayout& AddBinding(LayoutBinding binding);
+    DescriptorLayout& ClearBindings();
 
-    bool init() override;
-    void cleanup() override;
+    bool Init();
+    void Cleanup();
 
-    [[nodiscard]] VkDescriptorSetLayout getDescriptorSetLayout() const
+    [[nodiscard]] VkDescriptorSetLayout GetDescriptorSetLayout() const
     {
         return m_descriptorSetLayout;
     }
 private:
+    RenderingDevice& m_device;
+
     VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
     std::vector<LayoutBinding> m_descriptorSetLayoutBindings;
 
-    bool createDescriptorSetLayout();
+    bool CreateDescriptorSetLayout();
 };

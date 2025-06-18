@@ -6,49 +6,49 @@
 
 #include "context/rendering_device.h"
 
-DescriptorPool& DescriptorPool::setPoolSize(const std::vector<PoolSize>& poolSizes)
+DescriptorPool& DescriptorPool::SetPoolSize(const std::vector<PoolSize>& poolSizes)
 {
     m_descriptorPoolSizes = poolSizes;
     return *this;
 }
 
-DescriptorPool& DescriptorPool::addPoolSize(const PoolSize poolSize)
+DescriptorPool& DescriptorPool::AddPoolSize(const PoolSize poolSize)
 {
     m_descriptorPoolSizes.push_back(poolSize);
     return *this;
 }
 
-DescriptorPool& DescriptorPool::clearPoolSizes()
+DescriptorPool& DescriptorPool::ClearPoolSizes()
 {
     m_descriptorPoolSizes.clear();
     return *this;
 }
 
-DescriptorPool & DescriptorPool::setMaxSets(uint32_t maxSets)
+DescriptorPool & DescriptorPool::SetMaxSets(uint32_t maxSets)
 {
     m_maxSets = maxSets;
     return *this;
 }
 
-bool DescriptorPool::init()
+bool DescriptorPool::Init()
 {
     if (m_descriptorPool != VK_NULL_HANDLE)
     {
         return false;
     }
-    return createDescriptorPool();
+    return CreateDescriptorPool();
 }
 
-void DescriptorPool::cleanup()
+void DescriptorPool::Cleanup()
 {
     if (m_descriptorPool != VK_NULL_HANDLE)
     {
-        vkDestroyDescriptorPool(m_device.getLogicalDevice(), m_descriptorPool, nullptr);
+        vkDestroyDescriptorPool(m_device.GetLogicalDevice(), m_descriptorPool, nullptr);
         m_descriptorPool = VK_NULL_HANDLE;
     }
 }
 
-bool DescriptorPool::createDescriptorPool()
+bool DescriptorPool::CreateDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.reserve(m_descriptorPoolSizes.size());
@@ -64,10 +64,10 @@ bool DescriptorPool::createDescriptorPool()
     descriptorPoolInfo.maxSets = m_maxSets;
     descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-    VkResult result = vkCreateDescriptorPool(m_device.getLogicalDevice(), &descriptorPoolInfo, nullptr, &m_descriptorPool);
+    VkResult result = vkCreateDescriptorPool(m_device.GetLogicalDevice(), &descriptorPoolInfo, nullptr, &m_descriptorPool);
     if (result != VK_SUCCESS)
     {
-        Printer::error("Failed to create descriptor pool");
+        Printer::LogError("Failed to create descriptor pool");
         return false;
     }
     return true;
