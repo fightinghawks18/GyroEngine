@@ -65,19 +65,29 @@ void Renderer::advanceFrame()
     m_currentFrame = (m_currentFrame + 1) % m_device.getMaxFramesInFlight();
 }
 
-VkCommandBuffer Renderer::beginFrame()
+bool Renderer::beginFrame()
 {
     return startRecord();
 }
 
-void Renderer::setViewport(const Viewport& viewport)
+void Renderer::bindViewport(const Viewport& viewport)
 {
     m_viewport = viewport;
 }
 
-void Renderer::renderFrame()
+void Renderer::bindOutput(const VkRenderingInfoKHR &renderingInfo)
 {
-    m_renderPipeline.execute();
+    m_renderingInfo = renderingInfo;
+}
+
+void Renderer::beginRendering()
+{
+    vkCmdBeginRenderingKHR(m_commandBuffers[m_currentFrame], &m_renderingInfo);
+}
+
+void Renderer::endRendering()
+{
+    vkCmdEndRenderingKHR(m_commandBuffers[m_currentFrame]);
 }
 
 void Renderer::endFrame()
@@ -87,14 +97,14 @@ void Renderer::endFrame()
     presentRender();
 }
 
-VkCommandBuffer Renderer::startRecord()
+bool Renderer::startRecord()
 {
     if (m_needsRecreation)
     {
         if (!recreate())
         {
             Printer::error("Failed to recreate swapchain");
-            return VK_NULL_HANDLE;
+            return false;
         }
         m_needsRecreation = false;
     }
@@ -103,11 +113,11 @@ VkCommandBuffer Renderer::startRecord()
     if (waitResult == VK_TIMEOUT)
     {
         Printer::error("Fence timed out on frame index " + std::to_string(m_currentFrame));
-        return VK_NULL_HANDLE;
+        return false;
     } if (waitResult != VK_SUCCESS)
     {
         Printer::error("Failed to wait for fence: " + std::to_string(waitResult));
-        return VK_NULL_HANDLE;
+        return false;
     }
 
     vkResetFences(m_device.getLogicalDevice(), 1, &m_inFlightFences[m_currentFrame]);
@@ -128,11 +138,11 @@ VkCommandBuffer Renderer::startRecord()
     {
         m_needsRecreation = true;
         Printer::print("Image acquire out of date or suboptimal, recreating on frame " + std::to_string((m_currentFrame + 1) % m_device.getMaxFramesInFlight() ));
-        return VK_NULL_HANDLE;
+        return false;
     } if (imageAcquireResult != VK_SUCCESS)
     {
         Printer::error("Failed to acquire swapchain image: " + std::to_string(imageAcquireResult));
-        return VK_NULL_HANDLE;
+        return false;
     }
 
     VkCommandBuffer commandBuffer = m_commandBuffers[m_currentFrame];
@@ -143,7 +153,7 @@ VkCommandBuffer Renderer::startRecord()
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
     {
         Printer::error("Failed to begin command buffer recording");
-        return VK_NULL_HANDLE;
+        return false;
     }
 
     if (m_viewport.width > 0 && m_viewport.height > 0)
@@ -164,7 +174,7 @@ VkCommandBuffer Renderer::startRecord()
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
-    return commandBuffer;
+    return true;
 }
 
 void Renderer::presentRender()

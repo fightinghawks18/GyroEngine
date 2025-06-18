@@ -52,6 +52,38 @@ namespace rendererutils
         return availableFormats[0]; // Fallback to the first available format
     }
 
+    static VkRenderingInfoKHR newRenderStruct(VkExtent2D extent,
+        uint32_t colorCount = 1,
+        uint32_t depthCount = 0)
+    {
+        VkRenderingInfoKHR renderingInfo = {};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+        renderingInfo.flags = 0;
+        renderingInfo.renderArea.offset = { 0, 0 };
+        renderingInfo.renderArea.extent = extent;
+        renderingInfo.colorAttachmentCount = colorCount;
+        renderingInfo.pColorAttachments = nullptr; // Will be set later
+        renderingInfo.pDepthAttachment = nullptr; // Will be set later
+        renderingInfo.pStencilAttachment = nullptr; // Will be set later
+        renderingInfo.layerCount = 1; // Default to 1 layer
+        return renderingInfo;
+    }
+
+    static VkRenderingAttachmentInfoKHR newRenderAttachment(VkImageView imageView,
+        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    {
+        VkRenderingAttachmentInfoKHR renderAttachment = {};
+        renderAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        renderAttachment.imageView = imageView;
+        renderAttachment.imageLayout = layout;
+        renderAttachment.loadOp = loadOp;
+        renderAttachment.storeOp = storeOp;
+        renderAttachment.clearValue.color.float32[0] = 0.0f;
+        return renderAttachment;
+    }
+
     /// @note Queries the surface's capabilities to retrieve the best present mode
     static VkPresentModeKHR chooseBestPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {

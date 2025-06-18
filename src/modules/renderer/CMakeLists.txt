@@ -34,21 +34,12 @@ add_library(RendererModule STATIC
         resources/descriptor_pool.h
         resources/descriptor_layout.cpp
         resources/descriptor_layout.h
-        rendering/render_pipeline.cpp
-        rendering/render_pipeline.h
-        rendering/render_step.h
-        rendering/render_steps/clear_step.cpp
-        rendering/render_steps/clear_step.h
         resources/pipeline.cpp
         resources/pipeline.h
         utilities/pipeline.h
         resources/shader.cpp
         resources/shader.h
         utilities/shader.h
-        rendering/render_steps/scene_step.cpp
-        rendering/render_steps/scene_step.h
-        rendering/render_steps/post_step.cpp
-        rendering/render_steps/post_step.h
         resources/push_constant.h
 )
 

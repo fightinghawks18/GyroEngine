@@ -6,7 +6,6 @@
 
 #include <volk.h>
 
-#include "render_pipeline.h"
 #include "../utilities/renderer.h"
 #include "viewport.h"
 #include "../../platform/window.h"
@@ -36,7 +35,7 @@ struct FrameContext
 
 class Renderer {
 public:
-    explicit Renderer(RenderingDevice& device) : m_device(device), m_renderPipeline(*this)
+    explicit Renderer(RenderingDevice& device) : m_device(device)
     {
     }
 
@@ -48,15 +47,12 @@ public:
     bool recreate();
     void advanceFrame();
 
-    VkCommandBuffer beginFrame();
-    void setViewport(const Viewport& viewport);
-    void renderFrame();
+    bool beginFrame();
+    void bindViewport(const Viewport& viewport);
+    void bindOutput(const VkRenderingInfoKHR &renderingInfo);
+    void beginRendering();
+    void endRendering();
     void endFrame();
-
-    [[nodiscard]] RenderPipeline& getPipeline()
-    {
-        return m_renderPipeline;
-    }
 
     [[nodiscard]] VkFormat getSwapchainColorFormat() const
     {
@@ -86,7 +82,7 @@ private:
     RenderingDevice& m_device;
     Window* m_window = nullptr;
 
-    RenderPipeline m_renderPipeline;
+    VkRenderingInfoKHR m_renderingInfo = {};
 
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkQueue m_presentQueue = VK_NULL_HANDLE;
@@ -114,7 +110,7 @@ private:
 
     FrameContext m_frameContext = {};
 
-    VkCommandBuffer startRecord();
+    bool startRecord();
     void presentRender();
     void submitRender();
     void endRecord();

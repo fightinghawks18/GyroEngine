@@ -16,6 +16,12 @@
 
 namespace shaderutils
 {
+    enum class ShaderType
+    {
+        Graphics,
+        Compute
+    };
+
     inline std::vector<char> readShaderSPV(const std::string& filePath) {
         std::ifstream file(filePath, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {

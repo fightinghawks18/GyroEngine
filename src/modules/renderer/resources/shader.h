@@ -23,6 +23,11 @@ public:
     {
         return m_shaderModule;
     }
+
+    [[nodiscard]] std::string getShaderPath() const
+    {
+        return m_shaderPath;
+    }
 private:
     VkShaderModule m_shaderModule = VK_NULL_HANDLE;
     std::string m_shaderPath;
