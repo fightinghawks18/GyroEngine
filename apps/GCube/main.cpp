@@ -45,6 +45,7 @@ int main()
     }
 
     auto device = std::make_unique<Device::RenderingDevice>();
+    device->AllowDiscrete(true);
     if (!device->Init())
     {
         std::cerr << "Failed to initialize rendering device." << std::endl;
@@ -61,7 +62,11 @@ int main()
     const auto clearPass = std::make_shared<Rendering::Passes::ClearPass>();
     const auto scenePass = std::make_shared<Rendering::Passes::ScenePass>();
     const auto renderGraph = std::make_shared<Rendering::RenderGraph>();
+
+    // Enable render graph debug mode if in debug build
+#ifdef DEBUG
     renderGraph->SetDebug(true);
+#endif
 
     clearPass->SetClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 

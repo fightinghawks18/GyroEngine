@@ -18,7 +18,9 @@ RenderingDevice::~RenderingDevice()
 bool RenderingDevice::Init()
 {
     if (!CreateInstance()) return false;
+#ifdef DEBUG
     if (!SetupDebugMessenger()) return false;
+#endif
     if (!SelectPhysicalDevice()) return false;
     if (!CreateLogicalDevice()) return false;
     if (!CreateAllocator()) return false;
@@ -120,7 +122,9 @@ bool RenderingDevice::CreateInstance()
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     std::vector<const char*> validationLayers = {};
+#ifdef DEBUG
     validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
