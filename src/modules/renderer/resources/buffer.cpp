@@ -116,7 +116,7 @@ bool Buffer::CreateBuffer()
 
     VmaAllocationCreateInfo vmaInfo = {};
     vmaInfo.usage = m_memoryUsage;
-    vmaInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    vmaInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
     if (vmaCreateBuffer(m_device.GetAllocator(), &bufferInfo, &vmaInfo, &m_buffer, &m_allocation, nullptr) !=
         VK_SUCCESS)

@@ -348,7 +348,7 @@ bool Renderer::CreateImages()
             .SetExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
             .SetFormat(m_swapchainImageFormat);
 
-        depthImage->SetAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
+        depthImage->SetAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)
             .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
             .SetExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
             .SetFormat(m_device.GetPreferredDepthFormat());

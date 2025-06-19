@@ -1,42 +1,41 @@
 //
-// Created by lepag on 6/17/2025.
+// Created by lepag on 6/18/2025.
 //
 
 #pragma once
 
-#include <array>
-#include <glm/vec4.hpp>
+#include <memory>
 
 #include "../render_pass.h"
-#include "utilities/renderer.h"
+#include "resources/geometry.h"
 
 namespace GyroEngine::Rendering::Passes
 {
 
-    class ClearPass final : public IRenderPass
+    class ScenePass final : public IRenderPass
     {
     public:
-        ClearPass(): IRenderPass("ClearPass") {}
-        ~ClearPass() override = default;
+        ScenePass() : IRenderPass("Scene Pass") {}
+        ~ScenePass() override = default;
 
-        void SetClearColor(const std::array<float, 4>& clearColor)
+        void AddGeometry(const std::shared_ptr<Resources::Geometry>& geometry)
         {
-            m_clearColor = clearColor;
+            m_geometries.push_back(geometry);
         }
 
         void Execute(Renderer& renderer) override
         {
-            auto frame = renderer.GetFrameContext();
+            const auto frame = renderer.GetFrameContext();
 
             // Setup color attachment to clear colors on the screen
             auto colorAttachment = Utils::Renderer::CreateRenderAttachment(
-                frame.swapchainImage->GetImageView());
-            colorAttachment.clearValue.color = {m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]};
+                frame.swapchainImage->GetImageView(), VK_ATTACHMENT_LOAD_OP_LOAD);
+            colorAttachment.clearValue.color = {0.0f, 0.0f, 0.0f, 1.f};
 
             // Setup depth and stencil attachments to clear depth and stencil values
             auto depthStencilAttachment = Utils::Renderer::CreateRenderAttachment(
                 frame.depthImage->GetImageView(),
-                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_LOAD_OP_LOAD,
                 VK_ATTACHMENT_STORE_OP_STORE,
                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             depthStencilAttachment.clearValue.depthStencil = {1.0f, 0};
@@ -52,10 +51,19 @@ namespace GyroEngine::Rendering::Passes
             // Clear the attachments
             renderer.BindRenderingInfo(renderingInfo);
             renderer.StartRender();
+
+            // Draw geometry
+            for (const auto& geometry : m_geometries)
+            {
+                geometry->Update();
+                geometry->Draw(frame);
+            }
+            m_geometries.clear();
+
             renderer.EndRender();
         }
     private:
-        std::array<float, 4> m_clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+        std::vector<std::shared_ptr<Resources::Geometry>> m_geometries;
     };
 
 }

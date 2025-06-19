@@ -32,11 +32,11 @@ bool DescriptorSet::Init()
 
 void DescriptorSet::Cleanup()
 {
-    if (m_descriptorSet != VK_NULL_HANDLE)
+    if (m_descriptorSet != VK_NULL_HANDLE && m_descriptorPool != VK_NULL_HANDLE)
     {
         vkFreeDescriptorSets(m_device.GetLogicalDevice(), m_descriptorPool, 1, &m_descriptorSet);
-        m_descriptorSet = VK_NULL_HANDLE;
     }
+     m_descriptorSet = VK_NULL_HANDLE;
 }
 
 void DescriptorSet::Bind(const Rendering::FrameContext& frameContext, VkPipelineLayout layout) const

@@ -13,7 +13,7 @@ namespace GyroEngine::Resources
     {
     }
 
-    DescriptorManager::~DescriptorManager() = default;
+    DescriptorManager::~DescriptorManager() { Cleanup(); }
 
     void DescriptorManager::Cleanup()
     {
@@ -25,6 +25,7 @@ namespace GyroEngine::Resources
             layout->Cleanup();
         }
         for (const auto& set : m_descriptorSets) {
+            set->SetPool(VK_NULL_HANDLE); // This set was freed already with the pool, avoid double free
             set->Cleanup();
         }
         m_descriptorPools.clear();

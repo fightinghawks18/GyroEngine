@@ -1,0 +1,27 @@
+#version 450
+
+// Uniforms
+layout(set = 0, binding = 0) uniform UBO
+{
+    mat4 model;       // Model matrix
+    mat4 view;        // View matrix
+    mat4 proj;        // Projection matrix
+} ubo;
+
+// I/O
+layout(location = 0) in vec3 inVertexPos;       // Vertex position
+layout(location = 1) in vec3 inVertexNor;       // Vertex normal
+layout(location = 2) in vec2 inVertexUV;        // Vertex UV
+layout(location = 3) in vec3 inVertexTangent;   // Vertex tangent
+layout(location = 4) in vec4 inVertexCol;       // Vertex color
+
+layout(location = 0) out vec4 outVertexCol;      // Output vertex color
+
+void main()
+{
+    // Transform vertex position to clip space
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inVertexPos, 1.0);
+
+    // Pass through vertex color
+    outVertexCol = inVertexCol;
+}

@@ -44,6 +44,11 @@ add_library(RendererModule STATIC
         rendering/rendergraph/render_graph.h
         rendering/rendergraph/render_pass.h
         rendering/rendergraph/passes/clear_pass.h
+        rendering/rendergraph/passes/scene_pass.h
+        resources/geometry.cpp
+        resources/geometry.h
+        factories/geometry_factory.cpp
+        factories/geometry_factory.h
 )
 
 set_target_properties(RendererModule
