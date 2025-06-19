@@ -6,7 +6,6 @@
 
 #include "buffer.h"
 #include "pipeline.h"
-#include "descriptor_manager.h"
 #include "types.h"
 
 namespace GyroEngine::Device
@@ -17,16 +16,16 @@ namespace GyroEngine::Device
 namespace GyroEngine::Resources
 {
 
-    class Geometry
+    class Mesh
     {
     public:
-        explicit Geometry(Device::RenderingDevice& device): m_device(device) {}
-        ~Geometry() { Destroy(); }
+        explicit Mesh(Device::RenderingDevice& device): m_device(device) {}
+        ~Mesh() { Destroy(); }
 
-        Geometry& UseVertices(const std::vector<Types::Vertex>& vertices);
-        Geometry& UseIndices(const std::vector<uint32_t>& indices);
-        Geometry& UsePipeline(const std::shared_ptr<Pipeline>& pipeline);
-        Geometry& UseObjectMap(const Types::ObjectMap& objectMap)
+        Mesh& UseVertices(const std::vector<Types::Vertex>& vertices);
+        Mesh& UseIndices(const std::vector<uint32_t>& indices);
+        Mesh& UsePipeline(const std::shared_ptr<Pipeline>& pipeline);
+        Mesh& UseObjectMap(const Types::ObjectMap& objectMap)
         {
             m_vertices = objectMap.vertices;
             m_indices = objectMap.indices;
@@ -37,9 +36,9 @@ namespace GyroEngine::Resources
         void Destroy();
 
         void SetTransforms(const glm::mat4& view, const glm::mat4& proj);
-        void Update();
-
-        void Draw(const Rendering::FrameContext& frameContext) const;
+        void Update(uint32_t frameIndex);
+        void Bind(const Rendering::FrameContext& frame) const;
+        void Draw(const Rendering::FrameContext& frame) const;
 
         [[nodiscard]] glm::vec3& GetPosition()
         {
@@ -59,9 +58,7 @@ namespace GyroEngine::Resources
         Pipeline* m_pipeline = nullptr;
         std::unique_ptr<Buffer> m_vertexBuffer;
         std::unique_ptr<Buffer> m_indexBuffer;
-        std::unique_ptr<Buffer> m_mvpBuffer;
-
-        std::shared_ptr<DescriptorSet> m_mvpDescriptor = nullptr;
+        BufferHandle m_mvpBuffer;
 
         uint32_t m_indexCount = 0;
         uint32_t m_vertexCount = 0;
@@ -78,9 +75,8 @@ namespace GyroEngine::Resources
 
         void FillBuffers() const;
 
-        bool SetupUniforms();
-
         bool RegenerateObject();
     };
 
+    using MeshHandle = std::shared_ptr<Mesh>;
 }

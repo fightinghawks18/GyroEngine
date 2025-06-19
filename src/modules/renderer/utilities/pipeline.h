@@ -3,9 +3,9 @@
 //
 
 #pragma once
+#include <vector>
+
 #include "rendering/viewport.h"
-#include "resources/pipeline.h"
-#include "resources/push_constant.h"
 
 namespace GyroEngine::Utils::Pipeline
 {
@@ -90,7 +90,7 @@ namespace GyroEngine::Utils::Pipeline
     struct PipelineColorBlendAttachment
     {
         VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+                                               VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         VkBool32 blendEnable = VK_FALSE;
         VkBlendFactor srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
         VkBlendFactor dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -114,7 +114,7 @@ namespace GyroEngine::Utils::Pipeline
     {
         VkShaderStageFlagBits stage = VK_SHADER_STAGE_VERTEX_BIT;
         VkShaderModule module = VK_NULL_HANDLE;
-        const char* entryPoint = "main";
+        const char *entryPoint = "main";
     };
 
     struct PipelineConfig
@@ -128,8 +128,45 @@ namespace GyroEngine::Utils::Pipeline
         PipelineMultisampleState multisampleState{};
         PipelineColorBlendState colorBlendState{};
         PipelineBlendState blendState{};
-        std::vector<Resources::PushConstant*> pushConstants{};
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkFormat colorFormat = VK_FORMAT_UNDEFINED;
     };
+
+    inline VkWriteDescriptorSet MakeWriteDescriptorImage(
+        VkDescriptorSet dstSet,
+        uint32_t binding,
+        VkDescriptorType type,
+        const VkDescriptorImageInfo *imageInfo,
+        uint32_t count = 1,
+        uint32_t arrayElement = 0)
+    {
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = dstSet;
+        write.dstBinding = binding;
+        write.dstArrayElement = arrayElement;
+        write.descriptorType = type;
+        write.descriptorCount = count;
+        write.pImageInfo = imageInfo;
+        return write;
+    }
+
+    inline VkWriteDescriptorSet MakeWriteDescriptorBuffer(
+        VkDescriptorSet dstSet,
+        uint32_t binding,
+        VkDescriptorType type,
+        const VkDescriptorBufferInfo *bufferInfo,
+        uint32_t count = 1,
+        uint32_t arrayElement = 0)
+    {
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = dstSet;
+        write.dstBinding = binding;
+        write.dstArrayElement = arrayElement;
+        write.descriptorType = type;
+        write.descriptorCount = count;
+        write.pBufferInfo = bufferInfo;
+        return write;
+    }
 }

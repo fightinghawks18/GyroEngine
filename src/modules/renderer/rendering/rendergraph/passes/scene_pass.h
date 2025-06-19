@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "../render_pass.h"
-#include "resources/geometry.h"
+#include "resources/mesh.h"
 
 namespace GyroEngine::Rendering::Passes
 {
@@ -18,7 +18,7 @@ namespace GyroEngine::Rendering::Passes
         ScenePass() : IRenderPass("Scene Pass") {}
         ~ScenePass() override = default;
 
-        void AddGeometry(const std::shared_ptr<Resources::Geometry>& geometry)
+        void AddGeometry(const std::shared_ptr<Resources::Mesh>& geometry)
         {
             m_geometries.push_back(geometry);
         }
@@ -55,7 +55,8 @@ namespace GyroEngine::Rendering::Passes
             // Draw geometry
             for (const auto& geometry : m_geometries)
             {
-                geometry->Update();
+                geometry->Update(frame.frameIndex);
+                geometry->Bind(frame);
                 geometry->Draw(frame);
             }
             m_geometries.clear();
@@ -63,7 +64,7 @@ namespace GyroEngine::Rendering::Passes
             renderer.EndRender();
         }
     private:
-        std::vector<std::shared_ptr<Resources::Geometry>> m_geometries;
+        std::vector<std::shared_ptr<Resources::Mesh>> m_geometries;
     };
 
 }

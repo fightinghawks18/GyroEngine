@@ -32,6 +32,16 @@ namespace GyroEngine::Resources
         }
     }
 
+    std::optional<Utils::Shader::ShaderReflection> Shader::Reflect() const
+    {
+        if (m_shaderModule == VK_NULL_HANDLE)
+        {
+            Logger::LogError("Cannot reflect shader before it is created: " + m_shaderPath);
+            return std::nullopt;
+        }
+        return Utils::Shader::ReflectShaderSPV(m_shaderPath);
+    }
+
     bool Shader::CreateShader()
     {
         std::vector<char> shaderSource = Utils::Shader::ReadShaderSPV(m_shaderPath);

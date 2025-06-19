@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include <memory>
 #include <volk.h>
+
 namespace GyroEngine::Device
 {
     class RenderingDevice;
 }
-using namespace GyroEngine;
 
 namespace GyroEngine::Resources
 {
@@ -57,4 +58,5 @@ namespace GyroEngine::Resources
         bool CreateSampler();
     };
 
+    using SamplerHandle = std::shared_ptr<Sampler>;
 }

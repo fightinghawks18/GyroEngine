@@ -1,5 +1,6 @@
 find_package(Vulkan REQUIRED)
 find_package(unofficial-shaderc CONFIG REQUIRED)
+find_package(unofficial-spirv-reflect CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(vk-bootstrap CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
@@ -25,14 +26,6 @@ add_library(RendererModule STATIC
         resources/buffer.h
         resources/sampler.cpp
         resources/sampler.h
-        resources/descriptor_manager.cpp
-        resources/descriptor_manager.h
-        resources/descriptor_set.cpp
-        resources/descriptor_set.h
-        resources/descriptor_pool.cpp
-        resources/descriptor_pool.h
-        resources/descriptor_layout.cpp
-        resources/descriptor_layout.h
         resources/pipeline.cpp
         resources/pipeline.h
         utilities/pipeline.h
@@ -45,10 +38,13 @@ add_library(RendererModule STATIC
         rendering/rendergraph/render_pass.h
         rendering/rendergraph/passes/clear_pass.h
         rendering/rendergraph/passes/scene_pass.h
-        resources/geometry.cpp
-        resources/geometry.h
-        factories/geometry_factory.cpp
-        factories/geometry_factory.h
+        resources/mesh.cpp
+        resources/mesh.h
+        factories/mesh_factory.cpp
+        factories/mesh_factory.h
+        rendering/commands/command.h
+        resources/pipeline_bindings.cpp
+        resources/pipeline_bindings.h
 )
 
 set_target_properties(RendererModule
@@ -60,6 +56,7 @@ target_link_libraries(RendererModule
         PUBLIC
         Vulkan::Vulkan
         unofficial::shaderc::shaderc
+        unofficial::spirv-reflect
         SDL3::SDL3
         vk-bootstrap::vk-bootstrap
         volk::volk

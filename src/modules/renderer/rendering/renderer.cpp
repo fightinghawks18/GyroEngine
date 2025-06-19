@@ -134,6 +134,7 @@ bool Renderer::StartRecord()
     );
 
     m_swapchainImages[m_currentImageIndex]->MakeColor();
+    m_depthImages[m_currentFrame]->MakeDepthStencil();
 
     if (imageAcquireResult == VK_ERROR_OUT_OF_DATE_KHR
         || imageAcquireResult == VK_SUBOPTIMAL_KHR)

@@ -4,9 +4,10 @@
 
 #pragma once
 
+#include <memory>
 #include <volk.h>
 
-#include "descriptor_manager.h"
+#include "pipeline_bindings.h"
 #include "utilities/pipeline.h"
 
 namespace GyroEngine::Device
@@ -18,16 +19,15 @@ namespace GyroEngine::Rendering
 {
     struct FrameContext;
 }
-using namespace GyroEngine;
 
 namespace GyroEngine::Resources
 {
-    class Pipeline  {
+    class Pipeline {
     public:
         explicit Pipeline(Device::RenderingDevice& device): m_device(device) {}
         ~Pipeline() { Cleanup(); }
 
-        Pipeline& SetDescriptorManager(const std::shared_ptr<DescriptorManager>& descriptorManager);
+        Pipeline& SetPipelineBindings(const std::shared_ptr<PipelineBindings>& pipelineBindings);
         Pipeline& ClearConfig();
         Pipeline& SetColorFormat(VkFormat colorFormat);
 
@@ -52,16 +52,16 @@ namespace GyroEngine::Resources
             return m_pipelineLayout;
         }
 
-        [[nodiscard]] std::shared_ptr<DescriptorManager> GetDescriptorManager() const
+        [[nodiscard]] std::shared_ptr<PipelineBindings> GetPipelineBindings() const
         {
-            return m_descriptorManager;
+            return m_pipelineBindings;
         }
     private:
         Device::RenderingDevice& m_device;
 
         VkPipeline m_pipeline = VK_NULL_HANDLE;
         VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
-        std::shared_ptr<DescriptorManager> m_descriptorManager;
+        std::shared_ptr<PipelineBindings> m_pipelineBindings;
 
         Utils::Pipeline::PipelineConfig m_pipelineConfig{};
 

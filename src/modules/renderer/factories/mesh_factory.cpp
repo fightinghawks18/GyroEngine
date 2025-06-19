@@ -2,13 +2,18 @@
 // Created by lepag on 6/18/2025.
 //
 
-#include "geometry_factory.h"
+#include "mesh_factory.h"
 #include <vector>
+
+#include "../../../core/engine.h"
 
 namespace GyroEngine::Factories
 {
-    Types::ObjectMap GeometryFactory::CreateCube()
+    Resources::MeshHandle MeshFactory::CreateCube()
     {
+        auto device = Engine::Get().GetDeviceSmart();
+        auto mesh = std::make_shared<Resources::Mesh>(*device);
+
         std::vector<Types::Vertex> vertices = {
         // Front face (+Z)
         {{-0.5f, -0.5f,  0.5f}, {0, 0, 1}, {0, 0}, {1, 0, 0}, {1, 0, 0, 1}},
@@ -51,6 +56,9 @@ namespace GyroEngine::Factories
        20,21,22,22,23,20        // Bottom
     };
 
-    return {vertices, indices};
+
+        mesh->UseVertices(vertices);
+        mesh->UseIndices(indices);
+        return mesh;
     }
 }

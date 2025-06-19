@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <memory>
 #include <volk.h>
 #include "implementation/vma_implementation.h"
 
@@ -68,4 +69,5 @@ namespace GyroEngine::Resources
         bool CreateBuffer();
         void DestroyBuffer();
     };
+    using BufferHandle = std::shared_ptr<Buffer>;
 }

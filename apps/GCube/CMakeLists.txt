@@ -1,7 +1,7 @@
 include(${CMAKE_SOURCE_DIR}/cmake/copy_directory_to.cmake)
 
 add_executable(GCubeApp
-    main.cpp
+        main.cpp
 )
 
 set_target_properties(GCubeApp
@@ -10,13 +10,14 @@ set_target_properties(GCubeApp
 )
 
 target_link_libraries(GCubeApp PUBLIC
-    RendererModule
-    UtilitiesModule
-    PlatformModule
+        GyroEngine
+        RendererModule
+        UtilitiesModule
+        PlatformModule
 )
 
 target_include_directories(GCubeApp PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 # Copy content to the build directory
 copy_directory_to(${CMAKE_CURRENT_SOURCE_DIR}/content ${GyroBuildDir}/content)

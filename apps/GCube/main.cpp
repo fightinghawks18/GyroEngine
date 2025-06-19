@@ -9,8 +9,9 @@
 
 #include "utils.h"
 #include "window.h"
+#include "../../src/core/engine.h"
 #include "context/rendering_device.h"
-#include "factories/geometry_factory.h"
+#include "factories/mesh_factory.h"
 #include "rendering/renderer.h"
 #include "rendering/rendergraph/render_graph.h"
 #include "rendering/rendergraph/passes/clear_pass.h"
@@ -37,6 +38,13 @@ int main()
     Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/geometry/object.frag",
                                      shaderc_fragment_shader);
 
+    auto& engine = Engine::Get();
+    if (!engine.Init())
+    {
+        std::cerr << "Failed to initialize engine." << std::endl;
+        return -1;
+    }
+
     auto window = std::make_unique<Platform::Window>();
     if (!window->Init())
     {
@@ -44,14 +52,7 @@ int main()
         return -1;
     }
 
-    auto device = std::make_unique<Device::RenderingDevice>();
-    device->AllowDiscrete(true);
-    if (!device->Init())
-    {
-        std::cerr << "Failed to initialize rendering device." << std::endl;
-        return -1;
-    }
-    auto renderer = std::make_shared<Rendering::Renderer>(*device);
+    auto renderer = std::make_shared<Rendering::Renderer>(engine.GetDevice());
     if (!renderer->Init(window.get()))
     {
         std::cerr << "Failed to initialize renderer." << std::endl;
@@ -63,6 +64,9 @@ int main()
     const auto scenePass = std::make_shared<Rendering::Passes::ScenePass>();
     const auto renderGraph = std::make_shared<Rendering::RenderGraph>();
 
+    auto view = glm::mat4(1.0f);
+    auto proj = glm::mat4(1.0f);
+
     // Enable render graph debug mode if in debug build
 #ifdef DEBUG
     renderGraph->SetDebug(true);
@@ -70,10 +74,10 @@ int main()
 
     clearPass->SetClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 
-    auto pipeline = std::make_shared<Resources::Pipeline>(*device);
+    auto pipeline = std::make_shared<Resources::Pipeline>(engine.GetDevice());
     auto& pipelineConfig = pipeline->GetPipelineConfig();
 
-    auto vertexShader = std::make_shared<Resources::Shader>(*device);
+    auto vertexShader = std::make_shared<Resources::Shader>(engine.GetDevice());
     vertexShader->SetShaderPath(utils::GetExecutableDir() + "/content/shaders/geometry/object.vert.spv");
     if (!vertexShader->Init())
     {
@@ -81,7 +85,7 @@ int main()
         return -1;
     }
 
-    auto fragmentShader = std::make_shared<Resources::Shader>(*device);
+    auto fragmentShader = std::make_shared<Resources::Shader>(engine.GetDevice());
     fragmentShader->SetShaderPath(utils::GetExecutableDir() + "/content/shaders/geometry/object.frag.spv");
     if (!fragmentShader->Init())
     {
@@ -89,20 +93,10 @@ int main()
         return -1;
     }
 
-    auto descriptorManager = std::make_shared<Resources::DescriptorManager>(*device);
-    const auto objectLayout = descriptorManager->CreateDescriptorLayout();
-    objectLayout->AddBinding({0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr});
-    if (!objectLayout->Init())
+    auto pipelineBindings = std::make_shared<Resources::PipelineBindings>(engine.GetDevice(), *vertexShader->Reflect());
+    if (!pipelineBindings->Init())
     {
-        std::cerr << "Failed to initialize object descriptor layout." << std::endl;
-        return -1;
-    }
-    const auto objectPool = descriptorManager->CreateDescriptorPool();
-    objectPool->AddPoolSize({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10});
-    objectPool->SetMaxSets(10);
-    if (!objectPool->Init())
-    {
-        std::cerr << "Failed to initialize object descriptor pool." << std::endl;
+        std::cerr << "Failed to initialize pipeline bindings." << std::endl;
         return -1;
     }
 
@@ -120,8 +114,19 @@ int main()
     shaderStages.push_back(vertexShaderStage);
     shaderStages.push_back(fragmentShaderStage);
 
+    Utils::Pipeline::PipelineColorBlendAttachment colorBlendState = {};
+    colorBlendState.blendEnable = VK_TRUE;
+    colorBlendState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendState.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendState.alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
     pipelineConfig.shaderStages = shaderStages;
     pipelineConfig.colorFormat = renderer->GetSwapchainColorFormat();
+    pipelineConfig.colorBlendState.colorBlendStates.push_back(colorBlendState);
 
     pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
     pipelineConfig.vertexInputState.addAttribute(0, 0, offsetof(Types::Vertex, position), VK_FORMAT_R32G32B32_SFLOAT); // position
@@ -130,20 +135,18 @@ int main()
     pipelineConfig.vertexInputState.addAttribute(0, 3, offsetof(Types::Vertex, tangent),  VK_FORMAT_R32G32B32_SFLOAT); // tangent
     pipelineConfig.vertexInputState.addAttribute(0, 4, offsetof(Types::Vertex, color),    VK_FORMAT_R32G32B32A32_SFLOAT); // color
 
-    pipeline->SetDescriptorManager(descriptorManager);
+    pipeline->SetPipelineBindings(pipelineBindings);
     if (!pipeline->Init())
     {
         std::cerr << "Failed to initialize pipeline." << std::endl;
         return -1;
     }
 
-    const auto cube = Factories::GeometryFactory::CreateCube();
-    auto cubeGeometry = std::make_shared<Resources::Geometry>(*device);
-    cubeGeometry->UseObjectMap(cube)
-                .UsePipeline(pipeline);
-    if (!cubeGeometry->Generate())
+    auto cube = Factories::MeshFactory::CreateCube();
+    cube->UsePipeline(pipeline);
+    if (!cube->Generate())
     {
-        std::cerr << "Failed to generate cube geometry." << std::endl;
+        std::cerr << "Failed to initialize cube mesh." << std::endl;
         return -1;
     }
 
@@ -154,9 +157,18 @@ int main()
         {
             if (renderer->RecordFrame())
             {
-                scenePass->AddGeometry(cubeGeometry);
+                scenePass->AddGeometry(cube);
 
-                cubeGeometry->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
+                const auto frame = renderer->GetFrameContext();
+
+                view = glm::lookAtRH(glm::vec3(4.0f, -3.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                proj = glm::perspectiveRH(glm::radians(45.0f),
+                                          static_cast<float>(frame.swapchainExtent.width) /
+                                          static_cast<float>(frame.swapchainExtent.height),
+                                          0.1f, 10.0f);
+
+                cube->SetTransforms(view, proj);
+                cube->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
 
                 renderGraph->AddPass(clearPass);
                 renderGraph->AddPass(scenePass);
@@ -175,19 +187,17 @@ int main()
         }
     }
 
-    device->WaitForIdle();
+    engine.GetDevice().WaitForIdle();
 
     // Cleanup resources
-    cubeGeometry.reset();
+    cube.reset();
     pipeline.reset();
     fragmentShader.reset();
     vertexShader.reset();
-    descriptorManager.reset();
+    pipelineBindings.reset();
 
     // Cleanup renderer, device and window
     renderer.reset();
     window.reset();
-    device.reset();
-    SDL_Quit();
     return 0;
 }

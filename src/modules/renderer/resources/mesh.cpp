@@ -2,7 +2,7 @@
 // Created by lepag on 6/18/2025.
 //
 
-#include "geometry.h"
+#include "mesh.h"
 
 #include "debug/logger.h"
 #include "rendering/renderer.h"
@@ -10,39 +10,38 @@
 
 namespace GyroEngine::Resources
 {
-    Geometry & Geometry::UseVertices(const std::vector<Types::Vertex> &vertices)
+    Mesh & Mesh::UseVertices(const std::vector<Types::Vertex> &vertices)
     {
         m_vertices = vertices;
         return *this;
     }
 
-    Geometry & Geometry::UseIndices(const std::vector<uint32_t> &indices)
+    Mesh & Mesh::UseIndices(const std::vector<uint32_t> &indices)
     {
         m_indices = indices;
         return *this;
     }
 
-    Geometry & Geometry::UsePipeline(const std::shared_ptr<Pipeline> &pipeline)
+    Mesh & Mesh::UsePipeline(const std::shared_ptr<Pipeline> &pipeline)
     {
         m_pipeline = pipeline.get();
         m_pipelineDirty = true;
         return *this;
     }
 
-    bool Geometry::Generate()
+    bool Mesh::Generate()
     {
         if (m_isBuilt)
         {
             return RegenerateObject();
         }
         if (!CreateBuffers()) return false;
-        if (!SetupUniforms()) return false;
         FillBuffers();
         m_isBuilt = true;
         return true;
     }
 
-    void Geometry::Destroy()
+    void Mesh::Destroy()
     {
         if (!m_isBuilt)
         {
@@ -52,35 +51,44 @@ namespace GyroEngine::Resources
         m_isBuilt = false;
     }
 
-    void Geometry::SetTransforms(const glm::mat4 &view, const glm::mat4 &proj)
+    void Mesh::SetTransforms(const glm::mat4 &view, const glm::mat4 &proj)
     {
         m_mvp.view = view;
         m_mvp.projection = proj;
     }
 
-    void Geometry::Update()
+    void Mesh::Update(const uint32_t frameIndex)
     {
         m_mvp.model = m_transform.ToMatrix();
         m_mvpBuffer->Map(&m_mvp);
-        if (m_mvpDescriptor)
+
+        auto pipelineBindings = m_pipeline->GetPipelineBindings();
+        if (pipelineBindings->DoesBindingExist("ubo"))
         {
-            m_mvpDescriptor->UpdateBuffer(0, m_mvpBuffer->GetBuffer(), 0, m_mvpBuffer->GetSize());
+            pipelineBindings->UpdateBufferSet("ubo", m_mvpBuffer, frameIndex);
         }
     }
 
-    void Geometry::Draw(const Rendering::FrameContext &frameContext) const
+    void Mesh::Bind(const Rendering::FrameContext& frame) const
     {
-        m_pipeline->Bind(frameContext);
-        if (m_mvpDescriptor)
+        m_pipeline->Bind(frame);
+        m_indexBuffer->Bind(frame);
+        m_vertexBuffer->Bind(frame);
+        m_mvpBuffer->Bind(frame);
+
+        auto pipelineBindings = m_pipeline->GetPipelineBindings();
+        if (pipelineBindings->DoesBindingExist("ubo"))
         {
-            m_mvpDescriptor->Bind(frameContext, m_pipeline->GetPipelineLayout());
+            pipelineBindings->BindSet("ubo", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
         }
-        m_vertexBuffer->Bind(frameContext);
-        m_indexBuffer->Bind(frameContext);
-        vkCmdDrawIndexed(frameContext.cmd, static_cast<uint32_t>(m_indices.size()), 1, 0, 0, 0);
     }
 
-    bool Geometry::CreateBuffers()
+    void Mesh::Draw(const Rendering::FrameContext &frame) const
+    {
+        vkCmdDrawIndexed(frame.cmd, static_cast<uint32_t>(m_indices.size()), 1, 0, 0, 0);
+    }
+
+    bool Mesh::CreateBuffers()
     {
         // Create vertex buffer
         m_vertexBuffer = std::make_unique<Buffer>(m_device);
@@ -107,7 +115,7 @@ namespace GyroEngine::Resources
         }
 
         // Create MVP buffer (Model-View-Projection)
-        m_mvpBuffer = std::make_unique<Buffer>(m_device);
+        m_mvpBuffer = std::make_shared<Buffer>(m_device);
         m_mvpBuffer->SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
             .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
             .SetBufferType(Buffer::BufferType::Uniform)
@@ -120,7 +128,7 @@ namespace GyroEngine::Resources
         return true;
     }
 
-    void Geometry::DestroyBuffers()
+    void Mesh::DestroyBuffers()
     {
         if (m_vertexBuffer)
         {
@@ -141,49 +149,14 @@ namespace GyroEngine::Resources
         }
     }
 
-    void Geometry::FillBuffers() const
+    void Mesh::FillBuffers() const
     {
         m_vertexBuffer->Map(m_vertices.data());
         m_indexBuffer->Map(m_indices.data());
     }
 
-    bool Geometry::SetupUniforms()
+    bool Mesh::RegenerateObject()
     {
-        const auto descriptorManager = m_pipeline->GetDescriptorManager();
-        if (!descriptorManager)
-        {
-            Logger::LogError("Pipeline has no descriptor manager");
-            return false;
-        }
-        const auto descriptorSets = descriptorManager->GetDescriptorSets();
-        const auto descriptorLayouts = descriptorManager->GetDescriptorLayouts();
-        const auto descriptorPools = descriptorManager->GetDescriptorPools();
-        if (descriptorSets.empty())
-        {
-            // Create the descriptor set for object
-            // ^ Assume first pool and layout are for objects
-            m_mvpDescriptor = descriptorManager->CreateDescriptorSet(descriptorPools[0], descriptorLayouts[0]);
-            if (!m_mvpDescriptor->Init())
-            {
-                Logger::LogError("Failed to create object descriptor set");
-                return false;
-            }
-        } else
-        {
-            m_mvpDescriptor = descriptorSets[0]; // Assume first is for object
-        }
-        return true;
-    }
-
-    bool Geometry::RegenerateObject()
-    {
-        if (m_pipelineDirty)
-        {
-            // Get new uniforms from the new pipeline
-            SetupUniforms();
-            m_pipelineDirty = false;
-        }
-
         FillBuffers();
         return true;
     }

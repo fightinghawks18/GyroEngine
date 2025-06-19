@@ -4,17 +4,19 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <volk.h>
 #include "utilities/shader.h"
+
 namespace GyroEngine::Device
 {
     class RenderingDevice;
 }
-using namespace GyroEngine;
 
 namespace GyroEngine::Resources
 {
+
     class Shader {
     public:
         explicit Shader(Device::RenderingDevice& device): m_device(device) {}
@@ -24,6 +26,8 @@ namespace GyroEngine::Resources
 
         bool Init();
         void Cleanup();
+
+        [[nodiscard]] std::optional<Utils::Shader::ShaderReflection> Reflect() const;
 
         [[nodiscard]] VkShaderModule GetShaderModule() const
         {

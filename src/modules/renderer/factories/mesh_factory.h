@@ -5,14 +5,14 @@
 #pragma once
 
 #include "types.h"
+#include "resources/mesh.h"
 
 namespace GyroEngine::Factories
 {
-
-    class GeometryFactory
+    class MeshFactory
     {
     public:
-        static Types::ObjectMap CreateCube();
+        static Resources::MeshHandle CreateCube();
     };
 
 }

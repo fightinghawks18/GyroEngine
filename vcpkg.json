@@ -24,5 +24,11 @@
   }, {
     "name" : "nlohmann-json",
     "version>=" : "3.11.3#1"
+  }, {
+    "name" : "spirv-tools",
+    "version>=" : "1.4.304.1"
+  }, {
+    "name" : "spirv-reflect",
+    "version>=" : "1.4.304.1"
   } ]
 }

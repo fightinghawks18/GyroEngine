@@ -5,6 +5,7 @@ add_library(UtilitiesModule STATIC
         debug/Logger.cpp
         types.h
         utils.h
+        singleton.h
 )
 
 set_target_properties(UtilitiesModule
