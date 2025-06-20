@@ -54,6 +54,7 @@ add_library(RendererModule STATIC
         implementation/stb_implementation.cpp
         resources/texture.cpp
         resources/texture.h
+        resources/light_data.h
 )
 
 set_target_properties(RendererModule
