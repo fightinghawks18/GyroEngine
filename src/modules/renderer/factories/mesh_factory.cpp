@@ -5,6 +5,7 @@
 #include "mesh_factory.h"
 #include <vector>
 
+#include "utilities/mesh.h"
 #include "../../../core/engine.h"
 
 namespace GyroEngine::Factories
@@ -56,6 +57,22 @@ namespace GyroEngine::Factories
        20,21,22,22,23,20        // Bottom
     };
 
+
+        mesh->UseVertices(vertices);
+        mesh->UseIndices(indices);
+        return mesh;
+    }
+
+    Resources::MeshHandle MeshFactory::CreateFromFile(const std::string &filePath)
+    {
+        auto device = Engine::Get().GetDeviceSmart();
+        auto mesh = std::make_shared<Resources::Mesh>(*device);
+        auto [vertices, indices] = Utils::Mesh::LoadMeshDataFromFile(filePath);
+        if (vertices.empty() || indices.empty())
+        {
+            Logger::LogError("Failed to load mesh from file: " + filePath);
+            return nullptr;
+        }
 
         mesh->UseVertices(vertices);
         mesh->UseIndices(indices);

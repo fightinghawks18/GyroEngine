@@ -15,13 +15,15 @@ layout(location = 2) in vec2 inVertexUV;        // Vertex UV
 layout(location = 3) in vec3 inVertexTangent;   // Vertex tangent
 layout(location = 4) in vec4 inVertexCol;       // Vertex color
 
-layout(location = 0) out vec4 outVertexCol;      // Output vertex color
+layout(location = 0) out vec2 outVertexUV;      // Output UV
+layout(location = 1) out vec4 outVertexCol;     // Output vertex color
 
 void main()
 {
     // Transform vertex position to clip space
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inVertexPos, 1.0);
 
-    // Pass through vertex color
+    // Pass variables to fragment shader
     outVertexCol = inVertexCol;
+    outVertexUV = inVertexUV;
 }

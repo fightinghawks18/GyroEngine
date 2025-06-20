@@ -181,6 +181,18 @@ namespace GyroEngine::Resources
         return false;
     }
 
+    bool PipelineBindings::DoesPushConstantExist(const std::string &blockName) const
+    {
+        for (const auto &block: m_reflection.pushConstants)
+        {
+            if (block.name == blockName)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool PipelineBindings::CreateDescriptorSetLayouts()
     {
         std::unordered_map<uint32_t, std::vector<Utils::Shader::ShaderBinding>> bindingsPerSet;

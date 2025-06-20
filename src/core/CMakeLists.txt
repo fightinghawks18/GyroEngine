@@ -17,3 +17,6 @@ set_target_properties(GyroEngine
         PROPERTIES
         OUTPUT_NAME "gyroengine"
 )
+
+# Copy content to the build directory
+copy_directory_to(${CMAKE_CURRENT_SOURCE_DIR}/content ${GyroBuildDir}/content)

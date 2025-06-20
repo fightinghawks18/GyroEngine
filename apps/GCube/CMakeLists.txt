@@ -19,5 +19,3 @@ target_link_libraries(GCubeApp PUBLIC
 target_include_directories(GCubeApp PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
-# Copy content to the build directory
-copy_directory_to(${CMAKE_CURRENT_SOURCE_DIR}/content ${GyroBuildDir}/content)

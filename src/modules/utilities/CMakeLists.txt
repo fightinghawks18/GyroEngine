@@ -1,8 +1,9 @@
 find_package(glm CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 add_library(UtilitiesModule STATIC
         tasks/maid.cpp
-        debug/Logger.cpp
+        debug/logger.cpp
         types.h
         utils.h
         singleton.h
@@ -16,6 +17,7 @@ set_target_properties(UtilitiesModule
 target_link_libraries(UtilitiesModule
         PUBLIC
         glm::glm
+        fmt::fmt
 )
 
 target_include_directories(UtilitiesModule PUBLIC

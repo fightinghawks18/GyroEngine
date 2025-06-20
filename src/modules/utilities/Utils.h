@@ -13,7 +13,7 @@
 #include <windows.h>
 #endif
 
-namespace utils
+namespace GyroEngine::Utils
 {
     static std::string GetExecutableDir()
     {

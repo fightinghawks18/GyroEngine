@@ -81,6 +81,11 @@ namespace GyroEngine::Resources
         {
             pipelineBindings->BindSet("ubo", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
         }
+
+        if (pipelineBindings->DoesBindingExist("uTexture"))
+        {
+            pipelineBindings->BindSet("uTexture", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
+        }
     }
 
     void Mesh::Draw(const Rendering::FrameContext &frame) const

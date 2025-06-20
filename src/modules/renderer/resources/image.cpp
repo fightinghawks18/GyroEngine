@@ -4,10 +4,9 @@
 
 #include "image.h"
 
+#include "buffer.h"
 #include "context/rendering_device.h"
 #include "utilities/renderer.h"
-
-//Image Image::fromFile(RenderingDevice &device, const std::string &filePath) {}
 
 namespace GyroEngine::Resources
 {
@@ -203,26 +202,26 @@ namespace GyroEngine::Resources
         );
     }
 
-    void Image::CopyFromBuffer(VkBuffer buffer, const uint32_t layerCount)
+    void Image::CopyFromBuffer(VkBuffer buffer, VkExtent3D imageExtent, const uint32_t layerCount)
     {
         VkImageLayout oldLayout = m_imageLayout;
+        MakeTransferDst(); // Must be in transfer destination layout before copying
         Utils::Renderer::SubmitOneTimeCommand(
             m_device.GetLogicalDevice(),
             m_device.GetCommandPool(),
             m_device.GetDeviceFamilies().GetGraphicsQueue().queue,
             [&](VkCommandBuffer commandBuffer)
             {
-                MakeTransferDst(); // Must be in transfer destination layout before copying
                 VkBufferImageCopy region{};
                 region.bufferOffset = 0;
-                region.bufferRowLength = 0;
-                region.bufferImageHeight = 0;
+                region.bufferRowLength = imageExtent.width;
+                region.bufferImageHeight = imageExtent.height;
                 region.imageSubresource.aspectMask = m_aspectMask;
                 region.imageSubresource.mipLevel = 0;
                 region.imageSubresource.baseArrayLayer = 0;
                 region.imageSubresource.layerCount = layerCount;
                 region.imageOffset = {0, 0, 0};
-                region.imageExtent = m_extent;
+                region.imageExtent = imageExtent;
 
                 vkCmdCopyBufferToImage(
                     commandBuffer,

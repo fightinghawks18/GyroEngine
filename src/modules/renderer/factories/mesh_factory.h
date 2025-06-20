@@ -13,6 +13,7 @@ namespace GyroEngine::Factories
     {
     public:
         static Resources::MeshHandle CreateCube();
+        static Resources::MeshHandle CreateFromFile(const std::string& filePath);
     };
 
 }

@@ -69,7 +69,8 @@ namespace GyroEngine::Resources
         void BindSet(VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t set, uint32_t frameIndex);
         void BindSet(const std::string &bindingName, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t frameIndex);
 
-        bool DoesBindingExist(const std::string &bindingName) const;
+        [[nodiscard]] bool DoesBindingExist(const std::string &bindingName) const;
+        [[nodiscard]] bool DoesPushConstantExist(const std::string &blockName) const;
 
         [[nodiscard]] std::vector<VkDescriptorSetLayout> GetDescriptorSetLayouts() const
         {

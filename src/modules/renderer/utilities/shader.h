@@ -68,6 +68,64 @@ namespace GyroEngine::Utils::Shader
         std::vector<ShaderInputAttribute> inputAttributes;
     };
 
+    struct ShaderReflectionGroup
+    {
+        std::vector<ShaderReflection> reflections;
+
+        ShaderReflection CreateReflectionFromGroup() const
+        {
+            ShaderReflection merged;
+
+            // Merge descriptor sets
+            for (const auto& refl : reflections) {
+                for (const auto& binding : refl.descriptorSets) {
+                    auto it = std::find_if(
+                        merged.descriptorSets.begin(), merged.descriptorSets.end(),
+                        [&](const ShaderBinding& b) {
+                            return b.set == binding.set && b.binding == binding.binding;
+                        });
+                    if (it != merged.descriptorSets.end()) {
+                        it->stageFlags |= binding.stageFlags;
+                    } else {
+                        merged.descriptorSets.push_back(binding);
+                    }
+                }
+            }
+
+            // Merge push constants (by offset/size)
+            for (const auto& refl : reflections) {
+                for (const auto& pc : refl.pushConstants) {
+                    auto it = std::find_if(
+                        merged.pushConstants.begin(), merged.pushConstants.end(),
+                        [&](const ShaderPushConstant& mpc) {
+                            return mpc.offset == pc.offset && mpc.size == pc.size;
+                        });
+                    if (it != merged.pushConstants.end()) {
+                        it->stage |= pc.stage;
+                    } else {
+                        merged.pushConstants.push_back(pc);
+                    }
+                }
+            }
+
+            // Merge input attributes (by location)
+            for (const auto& refl : reflections) {
+                for (const auto& attr : refl.inputAttributes) {
+                    auto it = std::find_if(
+                        merged.inputAttributes.begin(), merged.inputAttributes.end(),
+                        [&](const ShaderInputAttribute& a) {
+                            return a.location == attr.location;
+                        });
+                    if (it == merged.inputAttributes.end()) {
+                        merged.inputAttributes.push_back(attr);
+                    }
+                }
+            }
+
+            return merged;
+        }
+    };
+
     inline std::vector<char> ReadShaderSPV(const std::string& filePath) {
         std::ifstream file(filePath, std::ios::binary | std::ios::ate);
         if (!file.is_open()) {

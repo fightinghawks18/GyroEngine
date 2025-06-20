@@ -30,8 +30,6 @@ namespace GyroEngine::Resources
 
         ~Image() { Cleanup(); }
 
-        //static Image fromFile(Device::RenderingDevice& device, const std::string& filePath);
-
         Image &SetFormat(VkFormat format);
 
         Image &SetExtent(VkExtent3D extent);
@@ -78,7 +76,7 @@ namespace GyroEngine::Resources
 
         void MoveToLayout(VkImageLayout newLayout, Utils::Device::QueueType dstQueue = Utils::Device::QueueType::None);
 
-        void CopyFromBuffer(VkBuffer buffer, uint32_t layerCount = 1);
+        void CopyFromBuffer(VkBuffer buffer, VkExtent3D imageExtent, uint32_t layerCount = 1);
 
         [[nodiscard]] VkImage GetImage() const
         {
@@ -98,6 +96,36 @@ namespace GyroEngine::Resources
         [[nodiscard]] VkExtent3D GetExtent() const
         {
             return m_extent;
+        }
+
+        [[nodiscard]] VkFormat GetFormat() const
+        {
+            return m_format;
+        }
+
+        [[nodiscard]] uint32_t GetMipLevels() const
+        {
+            return m_mipLevels;
+        }
+
+        [[nodiscard]] uint32_t GetArrayLayers() const
+        {
+            return m_arrayLayers;
+        }
+
+        [[nodiscard]] VkImageUsageFlags GetUsage() const
+        {
+            return m_usage;
+        }
+
+        [[nodiscard]] VkImageAspectFlags GetAspectMask() const
+        {
+            return m_aspectMask;
+        }
+
+        [[nodiscard]] VkImageType GetImageType() const
+        {
+            return m_imageType;
         }
 
     private:

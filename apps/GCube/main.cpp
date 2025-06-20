@@ -7,7 +7,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "utils.h"
+#include "Utils.h"
 #include "window.h"
 #include "../../src/core/engine.h"
 #include "context/rendering_device.h"
@@ -17,6 +17,7 @@
 #include "rendering/rendergraph/passes/clear_pass.h"
 #include "rendering/rendergraph/passes/scene_pass.h"
 #include "resources/shader.h"
+#include "resources/texture.h"
 #include "utilities/shader.h"
 
 using namespace GyroEngine;
@@ -29,13 +30,13 @@ int main()
         return -1;
     }
     // Compile shaders first
-    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/post_effects/sky.frag",
+    Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/post_effects/sky.frag",
                                      shaderc_fragment_shader);
-    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/post_effects/fullscreen_quad.vert",
+    Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/post_effects/fullscreen_quad.vert",
                                  shaderc_vertex_shader);
-    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/geometry/object.vert",
+    Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert",
                                      shaderc_vertex_shader);
-    Utils::Shader::CompileShaderToFile(utils::GetExecutableDir() + "/content/shaders/geometry/object.frag",
+    Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag",
                                      shaderc_fragment_shader);
 
     auto& engine = Engine::Get();
@@ -78,7 +79,7 @@ int main()
     auto& pipelineConfig = pipeline->GetPipelineConfig();
 
     auto vertexShader = std::make_shared<Resources::Shader>(engine.GetDevice());
-    vertexShader->SetShaderPath(utils::GetExecutableDir() + "/content/shaders/geometry/object.vert.spv");
+    vertexShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert.spv");
     if (!vertexShader->Init())
     {
         std::cerr << "Failed to initialize vertex shader." << std::endl;
@@ -86,14 +87,18 @@ int main()
     }
 
     auto fragmentShader = std::make_shared<Resources::Shader>(engine.GetDevice());
-    fragmentShader->SetShaderPath(utils::GetExecutableDir() + "/content/shaders/geometry/object.frag.spv");
+    fragmentShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag.spv");
     if (!fragmentShader->Init())
     {
         std::cerr << "Failed to initialize fragment shader." << std::endl;
         return -1;
     }
 
-    auto pipelineBindings = std::make_shared<Resources::PipelineBindings>(engine.GetDevice(), *vertexShader->Reflect());
+    Utils::Shader::ShaderReflectionGroup groupReflection = {};
+    groupReflection.reflections.push_back(*vertexShader->Reflect());
+    groupReflection.reflections.push_back(*fragmentShader->Reflect());
+
+    auto pipelineBindings = std::make_shared<Resources::PipelineBindings>(engine.GetDevice(), groupReflection.CreateReflectionFromGroup());
     if (!pipelineBindings->Init())
     {
         std::cerr << "Failed to initialize pipeline bindings." << std::endl;
@@ -128,6 +133,9 @@ int main()
     pipelineConfig.colorFormat = renderer->GetSwapchainColorFormat();
     pipelineConfig.colorBlendState.colorBlendStates.push_back(colorBlendState);
 
+    pipelineConfig.rasterizerState.cullMode = VK_CULL_MODE_BACK_BIT;
+    pipelineConfig.rasterizerState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
     pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
     pipelineConfig.vertexInputState.addAttribute(0, 0, offsetof(Types::Vertex, position), VK_FORMAT_R32G32B32_SFLOAT); // position
     pipelineConfig.vertexInputState.addAttribute(0, 1, offsetof(Types::Vertex, normal),   VK_FORMAT_R32G32B32_SFLOAT); // normal
@@ -142,7 +150,21 @@ int main()
         return -1;
     }
 
-    auto cube = Factories::MeshFactory::CreateCube();
+    auto texture = std::make_shared<Resources::Texture>(engine.GetDevice());
+    if (!texture->Init())
+    {
+        std::cerr << "Failed to initialize texture." << std::endl;
+        return -1;
+    }
+
+    texture->SetTexturePath(Utils::GetExecutableDir() + "/content/textures/woolymammoth.jpg");
+    if (!texture->Generate())
+    {
+        std::cerr << "Failed to generate texture." << std::endl;
+        return -1;
+    }
+
+    auto cube = Factories::MeshFactory::CreateFromFile(Utils::GetExecutableDir() + "/content/primitives/cube.glb");
     cube->UsePipeline(pipeline);
     if (!cube->Generate())
     {
@@ -161,14 +183,20 @@ int main()
 
                 const auto frame = renderer->GetFrameContext();
 
-                view = glm::lookAtRH(glm::vec3(4.0f, -3.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                view = glm::lookAtRH(glm::vec3(4.0f, 3.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
                 proj = glm::perspectiveRH(glm::radians(45.0f),
                                           static_cast<float>(frame.swapchainExtent.width) /
                                           static_cast<float>(frame.swapchainExtent.height),
                                           0.1f, 10.0f);
+                proj[1][1] *= -1.0f;
 
                 cube->SetTransforms(view, proj);
                 cube->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
+
+                if (pipelineBindings->DoesBindingExist("uTexture"))
+                {
+                    pipelineBindings->UpdateImageSet("uTexture", texture->GetSampler(), texture->GetImage(), frame.frameIndex);
+                }
 
                 renderGraph->AddPass(clearPass);
                 renderGraph->AddPass(scenePass);

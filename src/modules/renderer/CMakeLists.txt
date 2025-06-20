@@ -1,6 +1,8 @@
 find_package(Vulkan REQUIRED)
 find_package(unofficial-shaderc CONFIG REQUIRED)
 find_package(unofficial-spirv-reflect CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(vk-bootstrap CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
@@ -45,6 +47,13 @@ add_library(RendererModule STATIC
         rendering/commands/command.h
         resources/pipeline_bindings.cpp
         resources/pipeline_bindings.h
+        utilities/mesh.h
+        resources/material.cpp
+        resources/material.h
+        implementation/stb_implementation.h
+        implementation/stb_implementation.cpp
+        resources/texture.cpp
+        resources/texture.h
 )
 
 set_target_properties(RendererModule
@@ -58,16 +67,21 @@ target_link_libraries(RendererModule
         unofficial::shaderc::shaderc
         unofficial::spirv-reflect
         SDL3::SDL3
+        assimp::assimp
         vk-bootstrap::vk-bootstrap
         volk::volk
         PRIVATE
         UtilitiesModule
 )
 
-target_include_directories(RendererModule PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+target_include_directories(RendererModule
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        PRIVATE
+        ${Stb_INCLUDE_DIRS}
 )
 
-target_compile_definitions(RendererModule PUBLIC
-    VK_NO_PROTOTYPES
+target_compile_definitions(RendererModule
+        PUBLIC
+        VK_NO_PROTOTYPES
 )
