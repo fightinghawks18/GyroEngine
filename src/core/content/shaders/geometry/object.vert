@@ -1,7 +1,7 @@
 #version 450
 
 // Uniforms
-layout(set = 1, binding = 0) uniform UBO
+layout(set = 0, binding = 0) uniform UBO
 {
     mat4 model;       // Model matrix
     mat4 view;        // View matrix
@@ -21,7 +21,7 @@ layout(location = 2) out vec4 outVertexCol;     // Output vertex color
 
 void main()
 {
-    vec3 worldPos = ubo.model * vec4(inVertexPos, 1.0);
+    vec4 worldPos = ubo.model * vec4(inVertexPos, 1.0);
     outFragPos = worldPos.xyz;
 
     // Transform vertex position to clip space

@@ -193,7 +193,7 @@ namespace GyroEngine::Utils::Shader
                 shaderBinding.binding = binding->binding;
                 shaderBinding.type = static_cast<VkDescriptorType>(binding->descriptor_type);
                 shaderBinding.count = binding->count;
-                shaderBinding.stageFlags = reflect.shader_stage;
+                shaderBinding.stageFlags = static_cast<VkShaderStageFlags>(reflect.shader_stage);
                 reflection.descriptorSets.push_back(shaderBinding);
             }
         }
