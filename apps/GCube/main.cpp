@@ -16,6 +16,7 @@
 #include "rendering/rendergraph/render_graph.h"
 #include "rendering/rendergraph/passes/clear_pass.h"
 #include "rendering/rendergraph/passes/scene_pass.h"
+#include "resources/buffer_types.h"
 #include "resources/shader.h"
 #include "resources/texture.h"
 #include "utilities/shader.h"
@@ -136,12 +137,12 @@ int main()
     pipelineConfig.rasterizerState.cullMode = VK_CULL_MODE_BACK_BIT;
     pipelineConfig.rasterizerState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-    pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
-    pipelineConfig.vertexInputState.addAttribute(0, 0, offsetof(Types::Vertex, position), VK_FORMAT_R32G32B32_SFLOAT); // position
-    pipelineConfig.vertexInputState.addAttribute(0, 1, offsetof(Types::Vertex, normal),   VK_FORMAT_R32G32B32_SFLOAT); // normal
-    pipelineConfig.vertexInputState.addAttribute(0, 2, offsetof(Types::Vertex, texCoords),VK_FORMAT_R32G32_SFLOAT);    // texCoords
-    pipelineConfig.vertexInputState.addAttribute(0, 3, offsetof(Types::Vertex, tangent),  VK_FORMAT_R32G32B32_SFLOAT); // tangent
-    pipelineConfig.vertexInputState.addAttribute(0, 4, offsetof(Types::Vertex, color),    VK_FORMAT_R32G32B32A32_SFLOAT); // color
+    pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
+                                    .addAttribute("ivVertexPosition", offsetof(Types::Vertex, position))
+                                    .addAttribute("ivVertexNormal", offsetof(Types::Vertex, normal))
+                                    .addAttribute("ivVertexUV", offsetof(Types::Vertex, texCoords))
+                                    .addAttribute("ivVertexTangent", offsetof(Types::Vertex, tangent))
+                                    .addAttribute("ivVertexColor", offsetof(Types::Vertex, color));
 
     pipeline->SetPipelineBindings(pipelineBindings);
     if (!pipeline->Init())
@@ -172,6 +173,50 @@ int main()
         return -1;
     }
 
+    auto cameraBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
+    cameraBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
+                .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+    if (!cameraBuffer->Init())
+    {
+        Logger::LogError("Failed to initialize camera buffer.");
+        return -1;
+    }
+
+    auto lightBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
+    lightBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
+                .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+    if (!lightBuffer->Init())
+    {
+        Logger::LogError("Failed to initialize light buffer.");
+        return -1;
+    }
+
+    Resources::LightBuffer light = {};
+    light.position = {0.0f, 1.5f, 0.0f};
+    light.direction = {0.0f, -1.0f, 0.0f};
+    light.color = {1.0f, 1.0f, 1.0f};
+    light.angle = 50.0f;
+    light.type = 2;
+    light.intensity = 1.0f;
+    light.range = 100.0f;
+
+    Resources::LightBuffer lights[1] = {light};
+
+    lightBuffer->Map(lights);
+
+    Resources::CameraBuffer camera = {};
+    camera.position = glm::vec3(4.0f, 3.0f, 3.0f);
+    camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+    camera.fov = glm::radians(45.0f);
+    camera.aspect = 1.0f;
+    camera.nearPlane = 0.1f;
+    camera.farPlane = 10.0f;
+
+    cameraBuffer->Map(&camera);
+
+    int numLights = sizeof(lights);
+
     while (!window->HasRequestedQuit())
     {
         window->Update();
@@ -197,6 +242,9 @@ int main()
                 {
                     pipelineBindings->UpdateImageSet("uTexture", texture->GetSampler(), texture->GetImage(), frame.frameIndex);
                 }
+                pipelineBindings->UpdateBufferSet("cam", cameraBuffer, frame.frameIndex);
+                pipelineBindings->UpdateBufferSet("lightBuffer", lightBuffer, frame.frameIndex);
+                pipelineBindings->PushConstant("pushConstants", "lightCount", frame.cmd, pipeline->GetPipelineLayout(), &numLights);
 
                 renderGraph->AddPass(clearPass);
                 renderGraph->AddPass(scenePass);

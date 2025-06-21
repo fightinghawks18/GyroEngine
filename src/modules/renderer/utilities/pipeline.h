@@ -11,10 +11,8 @@ namespace GyroEngine::Utils::Pipeline
 {
     struct PipelineInputAttribute
     {
-        uint32_t binding = 0;
-        uint32_t location = 0;
+        std::string name;
         uint32_t offset = 0;
-        VkFormat format = VK_FORMAT_UNDEFINED;
     };
 
     struct PipelineInputBinding
@@ -22,21 +20,24 @@ namespace GyroEngine::Utils::Pipeline
         uint32_t binding = 0;
         uint32_t stride = 0;
         VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        std::vector<PipelineInputAttribute> inputAttributes;
+
+
+        PipelineInputBinding& addAttribute(const std::string& name, const uint32_t offset)
+        {
+            inputAttributes.push_back({name, offset});
+            return *this;
+        }
     };
 
     struct PipelineInputState
     {
-        std::vector<PipelineInputAttribute> inputAttributes;
         std::vector<PipelineInputBinding> inputBindings;
 
-        void addAttribute(const uint32_t binding, const uint32_t location, const uint32_t offset, VkFormat format)
-        {
-            inputAttributes.push_back({binding, location, offset, format});
-        }
-
-        void addBinding(const uint32_t binding, const uint32_t stride, VkVertexInputRate inputRate)
+        PipelineInputBinding& addBinding(const uint32_t binding, const uint32_t stride, VkVertexInputRate inputRate)
         {
             inputBindings.push_back({binding, stride, inputRate});
+            return inputBindings.back();
         }
     };
 

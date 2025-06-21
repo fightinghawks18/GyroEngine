@@ -4,6 +4,8 @@
 
 #include "pipeline_bindings.h"
 
+#include <map>
+
 #include "context/rendering_device.h"
 #include "utilities/pipeline.h"
 
@@ -205,15 +207,27 @@ namespace GyroEngine::Resources
             layoutInfo.setNumber = setNumber;
             layoutInfo.bindings = bindings;
 
+            std::map<std::pair<uint32_t, uint32_t>, VkDescriptorSetLayoutBinding> mergedBindings;
             std::vector<VkDescriptorSetLayoutBinding> vkBindings;
             for (const auto& b : bindings) {
-                VkDescriptorSetLayoutBinding vkBinding = {};
-                vkBinding.binding = b.binding;
-                vkBinding.descriptorType = b.type;
-                vkBinding.descriptorCount = b.count;
-                vkBinding.stageFlags = b.stageFlags;
-                vkBinding.pImmutableSamplers = nullptr;
-                vkBindings.push_back(vkBinding);
+                auto key = std::make_pair(b.set, b.binding);
+                auto it = mergedBindings.find(key);
+                if (it == mergedBindings.end()) {
+                    VkDescriptorSetLayoutBinding vkBinding = {};
+                    vkBinding.binding = b.binding;
+                    vkBinding.descriptorType = b.type;
+                    vkBinding.stageFlags = b.stageFlags;
+                    vkBinding.descriptorCount = b.count;
+                    vkBinding.pImmutableSamplers = nullptr;
+                    mergedBindings[key] = vkBinding;
+                } else {
+                    it->second.stageFlags |= b.stageFlags;
+                }
+            }
+
+            for (auto& vkBinding : mergedBindings)
+            {
+                vkBindings.push_back(vkBinding.second);
             }
 
             VkDescriptorSetLayoutCreateInfo layoutCI = {};

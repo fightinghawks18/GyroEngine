@@ -63,9 +63,9 @@ namespace GyroEngine::Resources
         m_mvpBuffer->Map(&m_mvp);
 
         auto pipelineBindings = m_pipeline->GetPipelineBindings();
-        if (pipelineBindings->DoesBindingExist("ubo"))
+        if (pipelineBindings->DoesBindingExist("mvp"))
         {
-            pipelineBindings->UpdateBufferSet("ubo", m_mvpBuffer, frameIndex);
+            pipelineBindings->UpdateBufferSet("mvp", m_mvpBuffer, frameIndex);
         }
     }
 
@@ -77,14 +77,14 @@ namespace GyroEngine::Resources
         m_mvpBuffer->Bind(frame);
 
         auto pipelineBindings = m_pipeline->GetPipelineBindings();
-        if (pipelineBindings->DoesBindingExist("ubo"))
+        if (pipelineBindings->DoesBindingExist("mvp"))
         {
-            pipelineBindings->BindSet("ubo", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
+            pipelineBindings->BindSet("mvp", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
         }
 
-        if (pipelineBindings->DoesBindingExist("uTexture"))
+        if (pipelineBindings->DoesBindingExist("usTexture"))
         {
-            pipelineBindings->BindSet("uTexture", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
+            pipelineBindings->BindSet("usTexture", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
         }
     }
 

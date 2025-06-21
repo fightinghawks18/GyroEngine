@@ -149,25 +149,46 @@ namespace GyroEngine::Resources
         std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
         std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
 
-        vertexInputBindingDescriptions.reserve(m_pipelineConfig.vertexInputState.inputBindings.size());
-        vertexInputAttributeDescriptions.reserve(m_pipelineConfig.vertexInputState.inputAttributes.size());
-        for (const auto &[binding, location, offset, format]: m_pipelineConfig.vertexInputState.inputAttributes)
+        uint32_t attributeCount = 0;
+        for (const auto& binding : m_pipelineConfig.vertexInputState.inputBindings)
         {
-            VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
-            vertexInputAttributeDescription.binding = binding;
-            vertexInputAttributeDescription.location = location;
-            vertexInputAttributeDescription.format = format;
-            vertexInputAttributeDescription.offset = offset;
-            vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
+            attributeCount += static_cast<uint32_t>(binding.inputAttributes.size());
         }
 
-        for (const auto &[binding, stride, inputRate]: m_pipelineConfig.vertexInputState.inputBindings)
+        vertexInputBindingDescriptions.reserve(m_pipelineConfig.vertexInputState.inputBindings.size());
+        vertexInputAttributeDescriptions.reserve(attributeCount);
+
+        for (const auto &[binding, stride, inputRate, attributes]: m_pipelineConfig.vertexInputState.inputBindings)
         {
             VkVertexInputBindingDescription vertexInputBindingDescription = {};
             vertexInputBindingDescription.binding = binding;
             vertexInputBindingDescription.stride = stride;
             vertexInputBindingDescription.inputRate = inputRate;
             vertexInputBindingDescriptions.push_back(vertexInputBindingDescription);
+
+            for (const auto& [name, offset] : attributes)
+            {
+                Utils::Shader::ShaderInputAttribute inputAttr = {};
+                for (const auto& attr : m_pipelineBindings->GetReflection().inputAttributes)
+                {
+                    if (attr.name == name)
+                    {
+                        inputAttr = attr;
+                        break;
+                    }
+                }
+                if (inputAttr.name.empty())
+                {
+                    Logger::LogError("Failed to find input attribute with name {}", name);;
+                    return false;
+                }
+                VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
+                vertexInputAttributeDescription.binding = binding;
+                vertexInputAttributeDescription.location = inputAttr.location;
+                vertexInputAttributeDescription.format = inputAttr.format;
+                vertexInputAttributeDescription.offset = offset;
+                vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
+            }
         }
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};

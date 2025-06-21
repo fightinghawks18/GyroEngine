@@ -55,6 +55,7 @@ add_library(RendererModule STATIC
         resources/texture.cpp
         resources/texture.h
         resources/light_data.h
+        resources/buffer_types.h
 )
 
 set_target_properties(RendererModule
