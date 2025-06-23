@@ -2,26 +2,18 @@
 
 // Structures
 struct Light {
-    int   type;
-    float pad0[3];
-
-    vec3  position;
-    float padding1;
-
-    vec3  direction;
-    float padding2;
-
-    vec3  color;
-    float padding3;
-
+    vec3 position;
+    float angle;
+    vec3 direction;
+    int type;
+    vec3 color;
     float intensity;
     float range;
-    float angle;
-    float padding4;
+    float pad[3];
 };
 
 // Uniforms
-layout(set = 0, binding = 1) uniform Camera {
+layout(set = 0, binding = 0) uniform Camera {
     vec3 position;
     vec3 direction;
     vec3 up;
@@ -35,9 +27,10 @@ layout(set = 0, binding = 1) uniform Camera {
 layout(set = 1, binding = 0) uniform sampler2D usTexture; // Object material texture
 
 // Buffers
-layout(std140, set = 0, binding = 2) readonly buffer LightBuffer {
-    Light lights[16];
-    int lightCount; // Number of lights in the buffer
+layout(std140, set = 0, binding = 1) readonly buffer LightBuffer {
+    Light lights[3];
+    int lightCount;
+    float pad[3];
 } lightBuffer;
 
 // Inputs
@@ -63,14 +56,14 @@ vec3 calculatePointLight(Light light, vec3 viewDir, vec3 fragPosition, vec3 norm
     float diffuse = max(dot(normal, lightDir), 0.0);
     float specular = calculateSpecular(lightDir, viewDir, normal, fragPosition, 32.0);
     return light.color * light.intensity * (diffuse + specular) * attenuation;
-} // Calculates the light contribution for a point light
+}
 
 vec3 calculateDirectionalLight(Light light, vec3 viewDir, vec3 fragPosition, vec3 normal) {
     vec3 lightDir = normalize(-light.direction);
     float diffuse = max(dot(normal, lightDir), 0.0);
     float specular = calculateSpecular(lightDir, viewDir, normal, fragPosition, 32.0);
     return light.color * light.intensity * (diffuse + specular);
-} // Calculates the light contribution for a directional light
+}
 
 vec3 calculateSpotLight(Light light, vec3 viewDir, vec3 fragPosition, vec3 normal) {
     vec3 lightDir = normalize(light.position - fragPosition);
@@ -83,15 +76,15 @@ vec3 calculateSpotLight(Light light, vec3 viewDir, vec3 fragPosition, vec3 norma
     float diffuse = max(dot(normal, lightDir), 0.0);
     float specular = calculateSpecular(lightDir, viewDir, normal, fragPosition, 32.0);
     return light.color * light.intensity * (diffuse + specular) * attenuation;
-} // Calculates the light contribution for a spot light
+}
 
 void main() {
     // Calculate a viewing direction from the camera position to the fragment position
     vec3 viewDir = normalize(cam.position - ivFragPosition);
-    vec3 lightResult = vec3(0.0); // This color dictates how much light hits this fragment
+    vec3 lightResult = vec3(0.1); // This color dictates how much light hits this fragment
 
     // Go through each light in the LightBuffer and calculate its contribution
-    for (int i = 0; i < lightBuffer.lightCount; i++) {
+    for (int i = 0; i < lightBuffer.lightCount + 1; i++) {
         Light light = lightBuffer.lights[i];
         if (light.type == 1) { // Directional light
             lightResult += calculateDirectionalLight(light, viewDir, ivFragPosition, normalize(ivVertexNormal));

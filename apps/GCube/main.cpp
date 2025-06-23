@@ -138,12 +138,12 @@ int main()
     pipelineConfig.rasterizerState.cullMode = VK_CULL_MODE_BACK_BIT;
     pipelineConfig.rasterizerState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-    pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
-    pipelineConfig.vertexInputState.addAttribute(0, 0, offsetof(Types::Vertex, position), VK_FORMAT_R32G32B32_SFLOAT); // position
-    pipelineConfig.vertexInputState.addAttribute(0, 1, offsetof(Types::Vertex, normal),   VK_FORMAT_R32G32B32_SFLOAT); // normal
-    pipelineConfig.vertexInputState.addAttribute(0, 2, offsetof(Types::Vertex, texCoords),VK_FORMAT_R32G32_SFLOAT);    // texCoords
-    pipelineConfig.vertexInputState.addAttribute(0, 3, offsetof(Types::Vertex, tangent),  VK_FORMAT_R32G32B32_SFLOAT); // tangent
-    pipelineConfig.vertexInputState.addAttribute(0, 4, offsetof(Types::Vertex, color),    VK_FORMAT_R32G32B32A32_SFLOAT); // color
+    pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
+                                    .addAttribute("ivVertexPosition", offsetof(Types::Vertex, position))
+                                    .addAttribute("ivVertexNormal", offsetof(Types::Vertex, normal))
+                                    .addAttribute("ivVertexUV", offsetof(Types::Vertex, texCoords))
+                                    .addAttribute("ivVertexTangent", offsetof(Types::Vertex, tangent))
+                                    .addAttribute("ivVertexColor", offsetof(Types::Vertex, color));
 
     pipeline->SetPipelineBindings(pipelineBindings);
     if (!pipeline->Init())
@@ -176,17 +176,27 @@ int main()
 
     // Create light source
     Resources::LightSource light = {};
-    light.position = {0.0f, 0.0f, 0.0f};
+    light.position = {4.0f, 1.0f, 0.0f};
     light.direction = {0.0f, -1.0f, 0.0f};
     light.color = {1.0f, 1.0f, 1.0f};
-    light.angle = 50.0f;
+    light.angle = 500.0f;
+    light.type = 0;
+    light.intensity = 1.0f;
+    light.range = 100.0f;
+
+    Resources::LightSource light2 = {};
+    light.position = {-4.0f, 1.0f, 0.0f};
+    light.direction = {0.0f, -1.0f, 0.0f};
+    light.color = {1.0f, 0.0f, 0.0f};
+    light.angle = 500.0f;
     light.type = 0;
     light.intensity = 1.0f;
     light.range = 100.0f;
 
     Resources::LightBuffer lights = {};
-    lights.light[0] = light;
-    lights.lightCount = 1;
+    lights.lights[0] = light;
+    lights.lights[1] = light2;
+    lights.lightCount = 2;
 
 
     // Create light buffer

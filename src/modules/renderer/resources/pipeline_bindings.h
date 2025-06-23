@@ -74,6 +74,15 @@ namespace GyroEngine::Resources
             std::vector<PushConstantMember> members;
         };
     public:
+        struct VertexInput
+        {
+            std::string name;
+            uint32_t location = 0;
+            VkFormat format = VK_FORMAT_UNDEFINED;
+            uint32_t offset = 0;
+            VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        };
+
         explicit PipelineBindings(Device::RenderingDevice& device) : m_device(device) {}
         ~PipelineBindings() { Cleanup(); }
 
@@ -111,6 +120,11 @@ namespace GyroEngine::Resources
             return m_descriptorPools;
         }
 
+        [[nodiscard]] std::vector<VertexInput>& GetVertexInputs()
+        {
+            return m_vertexInputs;
+        }
+
         [[nodiscard]] std::vector<std::shared_ptr<Set>> GetSets()
         {
             return m_sets;
@@ -121,6 +135,7 @@ namespace GyroEngine::Resources
         std::vector<VkDescriptorPool> m_descriptorPools;
         std::vector<ShaderHandle> m_shaderStages;
         std::vector<PushConstantBlock> m_pushConstants;
+        std::vector<VertexInput> m_vertexInputs;
         std::vector<std::shared_ptr<Set>> m_sets;
         std::unordered_map<ShaderHandle, SpvReflectShaderModule> m_spvModules;
 
@@ -129,6 +144,8 @@ namespace GyroEngine::Resources
 
         bool CreateSpvModules();
         void DestroySpvModules();
+
+        bool GetInputAttributes();
 
         bool CreateDescriptorSetLayouts();
         void DestroyDescriptorSetLayouts();
@@ -139,7 +156,7 @@ namespace GyroEngine::Resources
         bool CreateDescriptorPool();
         void DestroyDescriptorPool();
 
-        bool AllocateDescriptorSets() const;
+        [[nodiscard]] bool AllocateDescriptorSets() const;
         void DestroyDescriptorSets() const;
     };
 } // Resources

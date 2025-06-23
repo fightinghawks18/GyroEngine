@@ -46,6 +46,16 @@ namespace GyroEngine::Resources
             return false;
         }
 
+        if (!GetInputAttributes())
+        {
+            DestroyDescriptorSetLayouts();
+            DestroySpvModules();
+            DestroyDescriptorPool();
+            DestroyPushConstantRanges();
+            Logger::LogError("Failed to get input attributes for pipeline bindings.");
+            return false;
+        }
+
         // If we have pools available, then we can create descriptor sets
         if (!m_descriptorPools.empty())
         {
@@ -272,6 +282,50 @@ namespace GyroEngine::Resources
             spvReflectDestroyShaderModule(&spvModule);
             spvModule = {};
         }
+    }
+
+    bool PipelineBindings::GetInputAttributes()
+    {
+        // Iterate through each shader stage and reflect input attributes
+        for (const auto &[stage, spvModule]: m_spvModules)
+        {
+            if (stage->GetShaderStage() != Utils::Shader::ShaderStage::Vertex)
+            {
+                // Input attributes are only relevant for vertex shaders
+                continue;
+            }
+
+            uint32_t inputCount = 0;
+            SpvReflectResult result = spvReflectEnumerateInputVariables(&spvModule, &inputCount, nullptr);
+            if (result != SPV_REFLECT_RESULT_SUCCESS)
+            {
+                Logger::LogError("Failed to enumerate input variables for shader: " + stage->GetShaderPath());
+                return false;
+            }
+
+            std::vector<SpvReflectInterfaceVariable *> inputs(inputCount);
+            result = spvReflectEnumerateInputVariables(&spvModule, &inputCount, inputs.data());
+            if (result != SPV_REFLECT_RESULT_SUCCESS)
+            {
+                Logger::LogError("Failed to enumerate input variables for shader: " + stage->GetShaderPath());
+                return false;
+            }
+
+            // Populate input attributes
+            for (const auto *input: inputs)
+            {
+                if ((input->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0) continue; // Skip built-in variables
+
+                VertexInput attribute;
+                attribute.name = input->name ? input->name : "UNKNOWN INPUT";
+                attribute.format = static_cast<VkFormat>(input->format);
+                attribute.location = input->location;
+                attribute.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                m_vertexInputs.push_back(attribute);
+            }
+        }
+        return true;
     }
 
     bool PipelineBindings::CreateDescriptorSetLayouts()

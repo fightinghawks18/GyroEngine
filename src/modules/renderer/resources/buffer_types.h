@@ -22,25 +22,19 @@ namespace GyroEngine::Resources
         float padding3;
     };
 
-    struct alignas(16) LightSource
-    {
-        int type;
-        float pad0[3];
+    struct LightSource {
         glm::vec3 position;
-        float padding1;
+        float angle;
         glm::vec3 direction;
-        float padding2;
+        float type;
         glm::vec3 color;
-        float padding3;
         float intensity;
         float range;
-        float angle;
-        float padding4;
+        float pad[3];
     };
-
-    struct LightBuffer
-    {
-        LightSource light[16];
+    struct LightBuffer {
+        LightSource lights[1];
         int lightCount;
+        float pad[3];
     };
 }

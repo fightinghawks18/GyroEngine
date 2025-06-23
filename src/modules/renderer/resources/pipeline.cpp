@@ -168,8 +168,8 @@ namespace GyroEngine::Resources
 
             for (const auto& [name, offset] : attributes)
             {
-                Utils::Shader::ShaderInputAttribute inputAttr = {};
-                for (const auto& attr : m_pipelineBindings->GetReflection().inputAttributes)
+                PipelineBindings::VertexInput inputAttr = {};
+                for (const auto& attr : m_pipelineBindings->GetVertexInputs())
                 {
                     if (attr.name == name)
                     {
