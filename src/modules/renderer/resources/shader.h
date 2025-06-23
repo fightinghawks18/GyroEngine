@@ -23,6 +23,7 @@ namespace GyroEngine::Resources
         ~Shader() { Cleanup(); }
 
         Shader& SetShaderPath(const std::string& path);
+        Shader& SetShaderStage(Utils::Shader::ShaderStage type);
 
         bool Init();
         void Cleanup();
@@ -38,12 +39,20 @@ namespace GyroEngine::Resources
         {
             return m_shaderPath;
         }
+
+        [[nodiscard]] Utils::Shader::ShaderStage GetShaderStage() const
+        {
+            return m_shaderStage;
+        }
     private:
         Device::RenderingDevice& m_device;
 
         VkShaderModule m_shaderModule = VK_NULL_HANDLE;
         std::string m_shaderPath;
+        Utils::Shader::ShaderStage m_shaderStage = Utils::Shader::ShaderStage::Vertex;
 
         bool CreateShader();
     };
+
+    using ShaderHandle = std::shared_ptr<Shader>;
 }

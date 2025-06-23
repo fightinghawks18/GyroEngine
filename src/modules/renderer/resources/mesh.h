@@ -52,6 +52,11 @@ namespace GyroEngine::Resources
         {
             return m_transform.scale;
         }
+
+        [[nodiscard]] Pipeline* GetPipeline()
+        {
+            return m_pipeline;
+        }
     private:
         Device::RenderingDevice& m_device;
 

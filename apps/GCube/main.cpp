@@ -16,6 +16,8 @@
 #include "rendering/rendergraph/render_graph.h"
 #include "rendering/rendergraph/passes/clear_pass.h"
 #include "rendering/rendergraph/passes/scene_pass.h"
+#include "resources/buffer_types.h"
+#include "resources/light_data.h"
 #include "resources/shader.h"
 #include "resources/texture.h"
 #include "utilities/shader.h"
@@ -34,7 +36,7 @@ int main()
                                      shaderc_fragment_shader);
     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/post_effects/fullscreen_quad.vert",
                                  shaderc_vertex_shader);
-    Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert",
+     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert",
                                      shaderc_vertex_shader);
     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag",
                                      shaderc_fragment_shader);
@@ -79,7 +81,8 @@ int main()
     auto& pipelineConfig = pipeline->GetPipelineConfig();
 
     auto vertexShader = std::make_shared<Resources::Shader>(engine.GetDevice());
-    vertexShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert.spv");
+    vertexShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert.spv")
+                .SetShaderStage(Utils::Shader::ShaderStage::Vertex);
     if (!vertexShader->Init())
     {
         std::cerr << "Failed to initialize vertex shader." << std::endl;
@@ -87,18 +90,17 @@ int main()
     }
 
     auto fragmentShader = std::make_shared<Resources::Shader>(engine.GetDevice());
-    fragmentShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag.spv");
+    fragmentShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag.spv")
+                    .SetShaderStage(Utils::Shader::ShaderStage::Fragment);
     if (!fragmentShader->Init())
     {
         std::cerr << "Failed to initialize fragment shader." << std::endl;
         return -1;
     }
 
-    Utils::Shader::ShaderReflectionGroup groupReflection = {};
-    groupReflection.reflections.push_back(*vertexShader->Reflect());
-    groupReflection.reflections.push_back(*fragmentShader->Reflect());
-
-    auto pipelineBindings = std::make_shared<Resources::PipelineBindings>(engine.GetDevice(), groupReflection.CreateReflectionFromGroup());
+    auto pipelineBindings = std::make_shared<Resources::PipelineBindings>(engine.GetDevice());
+    pipelineBindings->AddShader(vertexShader);
+    pipelineBindings->AddShader(fragmentShader);
     if (!pipelineBindings->Init())
     {
         std::cerr << "Failed to initialize pipeline bindings." << std::endl;
@@ -172,6 +174,60 @@ int main()
         return -1;
     }
 
+    // Create light source
+    Resources::LightSource light = {};
+    light.position = {0.0f, 0.0f, 0.0f};
+    light.direction = {0.0f, -1.0f, 0.0f};
+    light.color = {1.0f, 1.0f, 1.0f};
+    light.angle = 50.0f;
+    light.type = 0;
+    light.intensity = 1.0f;
+    light.range = 100.0f;
+
+    Resources::LightBuffer lights = {};
+    lights.light[0] = light;
+    lights.lightCount = 1;
+
+
+    // Create light buffer
+    auto lightBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
+    lightBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
+                .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                .SetSize(sizeof(Resources::LightBuffer))
+                .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    if (!lightBuffer->Init())
+    {
+        std::cerr << "Failed to initialize light buffer." << std::endl;
+        return -1;
+    }
+    lightBuffer->Map(&lights);
+
+    // Create camera buffer
+    auto cameraBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
+    cameraBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
+                .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                .SetSize(sizeof(Resources::CameraBuffer) * 1)
+                .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    if (!cameraBuffer->Init())
+    {
+        Logger::LogError("Failed to initialize camera buffer.");
+        return -1;
+    }
+
+    Resources::CameraBuffer camera = {};
+    camera.position = glm::vec3(4.0f, 3.0f, 3.0f);
+    camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+    camera.fov = glm::radians(45.0f);
+    camera.aspect = 1.0f;
+    camera.nearPlane = 0.1f;
+    camera.farPlane = 10.0f;
+
+    cameraBuffer->Map(&camera);
+
+
+
+
     while (!window->HasRequestedQuit())
     {
         window->Update();
@@ -193,9 +249,17 @@ int main()
                 cube->SetTransforms(view, proj);
                 cube->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
 
-                if (pipelineBindings->DoesBindingExist("uTexture"))
+                if (pipelineBindings->DoesBindingExist("usTexture"))
                 {
-                    pipelineBindings->UpdateImageSet("uTexture", texture->GetSampler(), texture->GetImage(), frame.frameIndex);
+                    pipelineBindings->UpdateDescriptorImage("usTexture", texture->GetSampler(), texture->GetImage(), frame.frameIndex);
+                }
+                if (pipelineBindings->DoesBindingExist("cam"))
+                {
+                    pipelineBindings->UpdateDescriptorBuffer("cam", cameraBuffer, frame.frameIndex);
+                }
+                if (pipelineBindings->DoesBindingExist("lightBuffer"))
+                {
+                    pipelineBindings->UpdateDescriptorBuffer("lightBuffer", lightBuffer, frame.frameIndex);
                 }
 
                 renderGraph->AddPass(clearPass);

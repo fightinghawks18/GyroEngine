@@ -1,19 +1,25 @@
 //
-// Created by lepag on 6/19/2025.
+// Created by lepag on 6/21/2025.
 //
 
 #pragma once
 
-#include <functional>
 #include <string>
 #include <unordered_map>
-#include <utility>
+#include <vector>
 #include <volk.h>
+
+#include <spirv-reflect/spirv.h>
 
 #include "buffer.h"
 #include "image.h"
 #include "sampler.h"
-#include "utilities/shader.h"
+#include "shader.h"
+
+namespace GyroEngine::Rendering
+{
+    struct FrameContext;
+}
 
 namespace GyroEngine::Device
 {
@@ -22,86 +28,119 @@ namespace GyroEngine::Device
 
 namespace GyroEngine::Resources
 {
-
-    struct DescriptorSetLayoutInfo
-    {
-        uint32_t setNumber;
-        std::vector<Utils::Shader::ShaderBinding> bindings;
-
-        bool operator==(const DescriptorSetLayoutInfo& other) const {
-            return setNumber == other.setNumber &&
-                   bindings == other.bindings;
-        }
-    };
-
-    struct DescriptorSetLayoutInfoHasher {
-        std::size_t operator()(const DescriptorSetLayoutInfo& info) const {
-            std::size_t h = std::hash<uint32_t>{}(info.setNumber);
-            for (const auto& binding : info.bindings) {
-                h ^= std::hash<uint32_t>{}(binding.binding) + 0x9e3779b9 + (h << 6) + (h >> 2);
-                h ^= std::hash<uint32_t>{}(binding.type) + 0x9e3779b9 + (h << 6) + (h >> 2);
-                h ^= std::hash<uint32_t>{}(binding.count) + 0x9e3779b9 + (h << 6) + (h >> 2);
-                h ^= std::hash<uint32_t>{}(binding.stageFlags) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            }
-            return h;
-        }
-    };
-
     class PipelineBindings
     {
+        struct Binding
+        {
+            std::string name;
+            uint32_t binding = 0;
+            VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+            VkShaderStageFlags stageFlags = VK_SHADER_STAGE_ALL;
+
+            VkDescriptorSetLayoutBinding layoutBinding = {};
+        };
+
+        struct AllocatedSet
+        {
+            VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+            VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        };
+
+        struct Set
+        {
+            uint32_t set = 0;
+            VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+
+            VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+            std::vector<Binding> bindings;
+            std::vector<AllocatedSet> descriptorSets;
+        };
+
+        struct PushConstantMember
+        {
+            std::string name;
+            uint32_t offset = 0;
+            uint32_t size = 0;
+            void* data;
+        };
+
+        struct PushConstantBlock
+        {
+            std::string name;
+            uint32_t offset = 0;
+            uint32_t size = 0;
+            VkShaderStageFlags stageFlags = VK_SHADER_STAGE_ALL;
+
+            std::vector<PushConstantMember> members;
+        };
     public:
-        PipelineBindings(Device::RenderingDevice& device, Utils::Shader::ShaderReflection reflection)
-            : m_device(device), m_reflection(std::move(reflection)) {}
+        explicit PipelineBindings(Device::RenderingDevice& device) : m_device(device) {}
         ~PipelineBindings() { Cleanup(); }
+
+        PipelineBindings& AddShader(const ShaderHandle& shader)
+        {
+            m_shaderStages.push_back(shader);
+            return *this;
+        }
 
         bool Init();
         void Cleanup();
 
-        void UpdateImageSet(uint32_t set, uint32_t binding, VkDescriptorType descriptorType, SamplerHandle sampler, ImageHandle image, uint32_t frameIndex);
-        void UpdateImageSet(const std::string &bindingName, SamplerHandle sampler, ImageHandle image, uint32_t frameIndex);
+        void UpdateDescriptorBuffer(const std::string& name, const BufferHandle& buffer, uint32_t index);
+        void UpdateDescriptorImage(const std::string& name, const SamplerHandle& sampler, const ImageHandle& image, uint32_t index);
+        void UpdatePushConstant(const std::string& block, const std::string& name, const void* data, size_t size, uint32_t offset = 0);
 
-        void UpdateBufferSet(uint32_t set, uint32_t binding, VkDescriptorType descriptorType, const BufferHandle &buffer, uint32_t frameIndex);
-        void UpdateBufferSet(const std::string &bindingName, const BufferHandle &buffer, uint32_t frameIndex);
+        void BindConstants(const Rendering::FrameContext& frameContext, VkPipelineLayout pipelineLayout);
+        void Bind(const Rendering::FrameContext& frameContext, VkPipelineLayout pipelineLayout);
 
-        void PushConstant(VkCommandBuffer cmd, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* data) const;
-        void PushConstant(const std::string& block, const std::string& name, VkCommandBuffer cmd, VkPipelineLayout layout, const void* data);
+        bool DoesBindingExist(const std::string& name) { return GetBinding(name).has_value(); }
+        bool DoesPushConstantExist(const std::string& block, const std::string& name) { return GetPushConstant(block, name).has_value(); }
 
-        void BindSet(VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t set, uint32_t frameIndex);
-        void BindSet(const std::string &bindingName, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t frameIndex);
-
-        [[nodiscard]] bool DoesBindingExist(const std::string &bindingName) const;
-        [[nodiscard]] bool DoesPushConstantExist(const std::string &blockName) const;
-
-        [[nodiscard]] std::vector<VkDescriptorSetLayout> GetDescriptorSetLayouts() const
+        [[nodiscard]] std::vector<ShaderHandle>& GetShaderStages()
         {
-            std::vector<VkDescriptorSetLayout> layouts;
-            for (const auto& [info, layout] : layoutMap)
-            {
-                layouts.push_back(layout);
-            }
-            return layouts;
+            return m_shaderStages;
         }
 
-        [[nodiscard]] Utils::Shader::ShaderReflection GetReflection() const
+        [[nodiscard]] std::vector<PushConstantBlock>& GetPushConstants()
         {
-            return m_reflection;
+            return m_pushConstants;
+        }
+
+        [[nodiscard]] std::vector<VkDescriptorPool>& GetDescriptorPools()
+        {
+            return m_descriptorPools;
+        }
+
+        [[nodiscard]] std::vector<std::shared_ptr<Set>> GetSets()
+        {
+            return m_sets;
         }
     private:
         Device::RenderingDevice& m_device;
 
-        Utils::Shader::ShaderReflection m_reflection;
-        std::unordered_map<DescriptorSetLayoutInfo, VkDescriptorSetLayout, DescriptorSetLayoutInfoHasher> layoutMap;
-        VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
-        std::unordered_map<uint32_t, std::vector<VkDescriptorSet>> m_descriptorSets;
+        std::vector<VkDescriptorPool> m_descriptorPools;
+        std::vector<ShaderHandle> m_shaderStages;
+        std::vector<PushConstantBlock> m_pushConstants;
+        std::vector<std::shared_ptr<Set>> m_sets;
+        std::unordered_map<ShaderHandle, SpvReflectShaderModule> m_spvModules;
+
+        std::optional<std::pair<Set, Binding>> GetBinding(const std::string& name);
+        std::optional<std::pair<PushConstantBlock, PushConstantMember>> GetPushConstant(const std::string& block, const std::string& name);
+
+        bool CreateSpvModules();
+        void DestroySpvModules();
 
         bool CreateDescriptorSetLayouts();
         void DestroyDescriptorSetLayouts();
 
+        bool CreatePushConstantRanges();
+        void DestroyPushConstantRanges();
+
         bool CreateDescriptorPool();
         void DestroyDescriptorPool();
 
-        bool AllocateDescriptorSets();
-        void FreeDescriptorSets();
+        bool AllocateDescriptorSets() const;
+        void DestroyDescriptorSets() const;
     };
-
-}
+} // Resources
+// GyroEngine

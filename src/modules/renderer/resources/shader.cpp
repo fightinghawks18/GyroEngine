@@ -14,6 +14,12 @@ namespace GyroEngine::Resources
         return *this;
     }
 
+    Shader & Shader::SetShaderStage(const Utils::Shader::ShaderStage type)
+    {
+        m_shaderStage = type;
+        return *this;
+    }
+
     bool Shader::Init()
     {
         if (m_shaderModule != VK_NULL_HANDLE)

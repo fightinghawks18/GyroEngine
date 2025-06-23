@@ -1,339 +1,640 @@
 //
-// Created by lepag on 6/19/2025.
+// Created by lepag on 6/21/2025.
 //
 
 #include "pipeline_bindings.h"
 
+#include <map>
+#include <spirv_reflect.h>
+
 #include "context/rendering_device.h"
-#include "utilities/pipeline.h"
+#include "debug/logger.h"
+#include "rendering/renderer.h"
+#include "utilities/shader.h"
 
 namespace GyroEngine::Resources
 {
     bool PipelineBindings::Init()
     {
-        if (!CreateDescriptorSetLayouts()) return false;
-        if (!CreateDescriptorPool()) return false;
-        if (!AllocateDescriptorSets()) return false;
+        if (!CreateSpvModules())
+        {
+            Logger::LogError("Failed to create SPIR-V modules for pipeline bindings.");
+            return false;
+        }
+        if (!CreateDescriptorSetLayouts())
+        {
+            Logger::LogError("Failed to create descriptor set layouts for pipeline bindings.");
+            DestroySpvModules();
+            return false;
+        }
+
+        if (!CreateDescriptorPool())
+        {
+            DestroyDescriptorSetLayouts();
+            DestroySpvModules();
+            Logger::LogError("Failed to create descriptor pool for pipeline bindings.");
+            return false;
+        }
+
+        if (!CreatePushConstantRanges())
+        {
+            DestroyDescriptorSetLayouts();
+            DestroySpvModules();
+            DestroyDescriptorPool();
+            DestroyPushConstantRanges();
+            Logger::LogError("Failed to create push constant ranges for pipeline bindings.");
+            return false;
+        }
+
+        // If we have pools available, then we can create descriptor sets
+        if (!m_descriptorPools.empty())
+        {
+            if (!AllocateDescriptorSets())
+            {
+                DestroyDescriptorSetLayouts();
+                DestroySpvModules();
+                DestroyDescriptorPool();
+                DestroyPushConstantRanges();
+                DestroyDescriptorSets();
+                Logger::LogError("Failed to create descriptor sets for pipeline bindings.");
+                return false;
+            }
+        }
         return true;
     }
 
     void PipelineBindings::Cleanup()
     {
-        FreeDescriptorSets();
+        DestroyDescriptorSets();
         DestroyDescriptorPool();
         DestroyDescriptorSetLayouts();
+        DestroySpvModules();
+        m_shaderStages.clear();
+        m_pushConstants.clear();
+        m_sets.clear();
+        m_spvModules.clear();
+        m_descriptorPools.clear();
     }
 
-    void PipelineBindings::UpdateImageSet(uint32_t set, uint32_t binding, VkDescriptorType descriptorType, SamplerHandle sampler, ImageHandle image, uint32_t frameIndex)
+    void PipelineBindings::UpdateDescriptorBuffer(const std::string &name, const BufferHandle &buffer,
+                                                  uint32_t index)
     {
-        VkDescriptorImageInfo imageInfo = {};
-        imageInfo.sampler = sampler ? sampler->GetSampler() : VK_NULL_HANDLE;
-        imageInfo.imageView = image ? image->GetImageView() : VK_NULL_HANDLE;
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        VkDescriptorSet descriptorSet = m_descriptorSets[set][frameIndex];
-        const auto imageWriteInfo = Utils::Pipeline::MakeWriteDescriptorImage(descriptorSet, binding, descriptorType, &imageInfo);
-
-        vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &imageWriteInfo, 0, nullptr);
-    }
-
-    void PipelineBindings::UpdateImageSet(const std::string &bindingName, SamplerHandle sampler, ImageHandle image, uint32_t frameIndex)
-    {
-        Utils::Shader::ShaderBinding bindingInfo{};
-        for (const auto &binding: m_reflection.descriptorSets)
+        auto bindingOpt = GetBinding(name);
+        if (!bindingOpt.has_value())
         {
-            if (binding.name == bindingName &&
-                (binding.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-                 binding.type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
-                 binding.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE))
-            {
-                bindingInfo = binding;
-                break;
-            }
-        }
-        if (bindingInfo.name.empty())
-        {
-            Logger::LogError("No image binding found for binding name: " + bindingName);
+            Logger::LogError("Buffer binding {} was not found", name);
             return;
         }
 
-        VkDescriptorImageInfo imageInfo = {};
-        imageInfo.sampler = sampler ? sampler->GetSampler() : VK_NULL_HANDLE;
-        imageInfo.imageView = image ? image->GetImageView() : VK_NULL_HANDLE;
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        VkDescriptorBufferInfo bufferInfoDesc = {};
+        bufferInfoDesc.buffer = buffer->GetBuffer();
+        bufferInfoDesc.offset = 0;
+        bufferInfoDesc.range = buffer->GetSize();
 
-        VkDescriptorSet descriptorSet = m_descriptorSets[bindingInfo.set][frameIndex];
-        const auto imageWriteInfo = Utils::Pipeline::MakeWriteDescriptorImage(descriptorSet, bindingInfo.binding, bindingInfo.type, &imageInfo);
+        VkWriteDescriptorSet writeDesc = {};
+        writeDesc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDesc.dstSet = bindingOpt->first.descriptorSets[index].descriptorSet;
+        writeDesc.dstBinding = bindingOpt->second.binding;
+        writeDesc.dstArrayElement = 0;
+        writeDesc.descriptorType = bindingOpt->second.type;
+        writeDesc.descriptorCount = 1;
+        writeDesc.pBufferInfo = &bufferInfoDesc;
 
-        vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &imageWriteInfo, 0, nullptr);
+        vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &writeDesc, 0, nullptr);
+        Logger::Log("Updated descriptor buffer for binding: {}", name);
     }
 
-
-    void PipelineBindings::UpdateBufferSet(uint32_t set, uint32_t binding, VkDescriptorType descriptorType, const BufferHandle &buffer, const uint32_t frameIndex)
+    void PipelineBindings::UpdateDescriptorImage(const std::string &name, const SamplerHandle &sampler,
+                                                 const ImageHandle &image,
+                                                 uint32_t index)
     {
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = buffer ? buffer->GetBuffer() : VK_NULL_HANDLE;
-        bufferInfo.offset = 0;
-        bufferInfo.range = buffer ? buffer->GetSize() : 0;
-
-        VkDescriptorSet descriptorSet = m_descriptorSets[set][frameIndex];
-        const auto bufferWriteInfo = Utils::Pipeline::MakeWriteDescriptorBuffer(descriptorSet, binding, descriptorType, &bufferInfo);
-
-        vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &bufferWriteInfo, 0, nullptr);
-    }
-
-    void PipelineBindings::UpdateBufferSet(const std::string &bindingName, const BufferHandle &buffer, const uint32_t frameIndex)
-    {
-        Utils::Shader::ShaderBinding bindingInfo{};
-        for (const auto &binding: m_reflection.descriptorSets)
+        const auto bindingOpt = GetBinding(name);
+        if (!bindingOpt.has_value())
         {
-            if (binding.name == bindingName &&
-                (binding.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
-                 binding.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER))
-            {
-                bindingInfo = binding;
-                break;
-            }
-        }
-        if (bindingInfo.name.empty())
-        {
-            Logger::LogError("No buffer binding found for binding name: " + bindingName);
+            Logger::LogError("Image binding {} was not found", name);
             return;
         }
 
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = buffer ? buffer->GetBuffer() : VK_NULL_HANDLE;
-        bufferInfo.offset = 0;
-        bufferInfo.range = buffer ? buffer->GetSize() : 0;
-        VkDescriptorSet descriptorSet = m_descriptorSets[bindingInfo.set][frameIndex];
+        VkDescriptorImageInfo imageInfoDesc = {};
+        imageInfoDesc.imageLayout = image->GetImageLayout();
+        imageInfoDesc.imageView = image->GetImageView();
+        imageInfoDesc.sampler = sampler->GetSampler();
 
-        const auto bufferWriteInfo = Utils::Pipeline::MakeWriteDescriptorBuffer(descriptorSet, bindingInfo.binding, bindingInfo.type, &bufferInfo);
-        vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &bufferWriteInfo, 0, nullptr);
+        VkWriteDescriptorSet writeDesc = {};
+        writeDesc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDesc.dstSet = bindingOpt->first.descriptorSets[index].descriptorSet;
+        writeDesc.dstBinding = bindingOpt->second.binding;
+        writeDesc.dstArrayElement = 0;
+        writeDesc.descriptorType = bindingOpt->second.type;
+        writeDesc.descriptorCount = 1;
+        writeDesc.pImageInfo = &imageInfoDesc;
+
+        vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &writeDesc, 0, nullptr);
+        Logger::Log("Updated descriptor image for binding: {}", name);
     }
 
-    void PipelineBindings::PushConstant(VkCommandBuffer cmd, VkPipelineLayout layout, VkShaderStageFlags stageFlags,
-        uint32_t offset, uint32_t size, const void *data) const
+    void PipelineBindings::UpdatePushConstant(const std::string &block, const std::string &name,
+                                              const void *data, size_t size, uint32_t offset)
     {
-        vkCmdPushConstants(cmd, layout, stageFlags, offset, size, data);
-    }
-
-    void PipelineBindings::PushConstant(const std::string& block, const std::string &name, VkCommandBuffer cmd, VkPipelineLayout layout,
-        const void *data)
-    {
-        Utils::Shader::ShaderPushConstantMember memberInfo{};
-        VkShaderStageFlags stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        for (const auto &pc: m_reflection.pushConstants)
+        // Check for null data pointer first
+        if (!data)
         {
-            if (pc.name == block)
+            Logger::LogError("Null data pointer provided for push constant {} in block {}", name, block);
+            return;
+        }
+
+        auto pushConstantOpt = GetPushConstant(block, name);
+        if (!pushConstantOpt.has_value())
+        {
+            Logger::LogError("Push constant {} in block {} was not found", name, block);
+            return;
+        }
+
+        auto &[b, m] = pushConstantOpt.value();
+        uint32_t memberOffset = m.offset + offset;
+
+        // Ensure the size does not exceed the push constant member size
+        if (size + offset > m.size)
+        {
+            Logger::LogError("Push constant {} in block {} exceeds size limit", name, block);
+            return;
+        }
+
+        // Allocate memory for the push constant data if not already allocated
+        if (!m.data)
+        {
+            m.data = malloc(m.size);
+            if (!m.data)
             {
-                for (const auto &member: pc.members)
+                Logger::LogError("Failed to allocate memory for push constant {} in block {}", name, block);
+                return;
+            }
+            memset(m.data, 0, m.size);
+        }
+
+        // Copy new data to the push constant data
+        uint8_t *dataPtr = static_cast<uint8_t *>(m.data) + memberOffset;
+        memcpy(dataPtr, data, size);
+    }
+
+    void PipelineBindings::BindConstants(const Rendering::FrameContext &frameContext, VkPipelineLayout pipelineLayout)
+    {
+        return; // No push constants to bind in this implementation
+    }
+
+    void PipelineBindings::Bind(const Rendering::FrameContext &frameContext, VkPipelineLayout pipelineLayout)
+    {
+        VkCommandBuffer cmd = frameContext.cmd;
+
+        // Bind descriptor sets for each set
+        for (const auto &set: m_sets)
+        {
+            if (set->descriptorSets.empty() || set->layout == VK_NULL_HANDLE)
+                continue;
+
+            uint32_t frameIndex = frameContext.frameIndex;
+            // Ensure we don't go out of bounds if we have fewer descriptor sets than frames
+            if (frameIndex >= set->descriptorSets.size())
+                frameIndex = frameIndex % set->descriptorSets.size();
+
+            VkDescriptorSet descriptorSet = set->descriptorSets[frameIndex].descriptorSet;
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
+                                    set->set, 1, &descriptorSet, 0, nullptr);
+        }
+    }
+
+    std::optional<std::pair<PipelineBindings::Set, PipelineBindings::Binding> > PipelineBindings::GetBinding(
+        const std::string &name)
+    {
+        for (const auto &set: m_sets)
+        {
+            for (const auto &binding: set->bindings)
+            {
+                if (binding.name == name)
+                {
+                    return {{*set, binding}};
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::pair<PipelineBindings::PushConstantBlock, PipelineBindings::PushConstantMember> >
+    PipelineBindings::GetPushConstant(const std::string &block, const std::string &name)
+    {
+        for (const auto &pushConstant: m_pushConstants)
+        {
+            if (pushConstant.name == block)
+            {
+                for (const auto &member: pushConstant.members)
                 {
                     if (member.name == name)
                     {
-                        memberInfo = member;
-                        stageFlags = pc.stage;
-                        break;
+                        return {{pushConstant, member}};
                     }
                 }
             }
         }
-        if (memberInfo.name.empty())
-        {
-            Logger::LogError("No push constant found for name: " + name);
-            return;
-        }
-        vkCmdPushConstants(cmd, layout, stageFlags, memberInfo.offset, memberInfo.size, data);
+        return std::nullopt;
     }
 
-    void PipelineBindings::BindSet(VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t set, uint32_t frameIndex)
+    bool PipelineBindings::CreateSpvModules()
     {
-        vkCmdBindDescriptorSets(cmd, bindPoint, layout, set, 1, &m_descriptorSets[set][frameIndex], 0, nullptr);
-    }
-
-    void PipelineBindings::BindSet(const std::string &bindingName, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t frameIndex)
-    {
-        Utils::Shader::ShaderBinding bindingInfo{};
-        for (const auto &binding: m_reflection.descriptorSets)
+        // Enumerate through all shader stages and create SPIR-V modules to be reflected from
+        for (const auto &stage: m_shaderStages)
         {
-            if (binding.name == bindingName)
+            // Reflect shader module
+            SpvReflectShaderModule spvModule = {};
+
+            auto spvData = Utils::Shader::ReadShaderSPV(stage->GetShaderPath());
+            if (spvData.empty())
             {
-                bindingInfo = binding;
-                break;
+                Logger::LogError("Failed to read SPIR-V data from shader: " + stage->GetShaderPath());
+                return false;
             }
+
+            SpvReflectResult result = spvReflectCreateShaderModule(spvData.size(), spvData.data(), &spvModule);
+            if (result != SPV_REFLECT_RESULT_SUCCESS)
+            {
+                Logger::LogError("Failed to create SPIR-V reflection module for shader: " + stage->GetShaderPath());
+                return false;
+            }
+
+            m_spvModules[stage] = spvModule;
         }
-        if (bindingInfo.name.empty())
-        {
-            Logger::LogError("No binding found for binding name: " + bindingName);
-            return;
-        }
-        vkCmdBindDescriptorSets(cmd, bindPoint, layout, bindingInfo.set, 1, &m_descriptorSets[bindingInfo.set][frameIndex], 0, nullptr);
+        return true;
     }
 
-    bool PipelineBindings::DoesBindingExist(const std::string &bindingName) const
+    void PipelineBindings::DestroySpvModules()
     {
-        for (const auto &binding: m_reflection.descriptorSets)
+        for (auto &[stage, spvModule]: m_spvModules)
         {
-            if (binding.name == bindingName)
-            {
-                return true;
-            }
+            spvReflectDestroyShaderModule(&spvModule);
+            spvModule = {};
         }
-        return false;
-    }
-
-    bool PipelineBindings::DoesPushConstantExist(const std::string &blockName) const
-    {
-        for (const auto &block: m_reflection.pushConstants)
-        {
-            if (block.name == blockName)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     bool PipelineBindings::CreateDescriptorSetLayouts()
     {
-        std::unordered_map<uint32_t, std::vector<Utils::Shader::ShaderBinding>> bindingsPerSet;
-        for (const auto& binding : m_reflection.descriptorSets) {
-            bindingsPerSet[binding.set].push_back(binding);
-        }
-
-        for (const auto& [setNumber, bindings] : bindingsPerSet) {
-            DescriptorSetLayoutInfo layoutInfo;
-            layoutInfo.setNumber = setNumber;
-            layoutInfo.bindings = bindings;
-
-            std::vector<VkDescriptorSetLayoutBinding> vkBindings;
-            for (const auto& b : bindings) {
-                VkDescriptorSetLayoutBinding vkBinding = {};
-                vkBinding.binding = b.binding;
-                vkBinding.descriptorType = b.type;
-                vkBinding.descriptorCount = b.count;
-                vkBinding.stageFlags = b.stageFlags;
-                vkBinding.pImmutableSamplers = nullptr;
-                vkBindings.push_back(vkBinding);
-            }
-
-            VkDescriptorSetLayoutCreateInfo layoutCI = {};
-            layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutCI.bindingCount = static_cast<uint32_t>(vkBindings.size());
-            layoutCI.pBindings = vkBindings.data();
-
-            VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-            if (vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &layoutCI, nullptr, &layout) != VK_SUCCESS) {
-                Logger::LogError("Failed to create descriptor set layout for set " + std::to_string(setNumber));
+        // Iterate through each shader stage and create descriptor set layouts
+        for (auto &[stage, spvModule]: m_spvModules)
+        {
+            // Reflect shader's descriptor sets
+            uint32_t setCount = 0;
+            auto result = spvReflectEnumerateDescriptorSets(&spvModule, &setCount, nullptr);
+            if (result != SPV_REFLECT_RESULT_SUCCESS)
+            {
+                spvReflectDestroyShaderModule(&spvModule);
+                Logger::LogError("Failed to enumerate descriptor sets for shader {}", stage->GetShaderPath());
                 return false;
             }
 
-            layoutMap[layoutInfo] = layout;
+            // Populate vector with descriptor set information
+            std::vector<SpvReflectDescriptorSet *> sets(setCount);
+            result = spvReflectEnumerateDescriptorSets(&spvModule, &setCount, sets.data());
+
+            // Iterate through each set and create bindings
+            for (uint32_t i = 0; i < setCount; ++i)
+            {
+                std::shared_ptr<Set> set = nullptr;
+
+                // Check if this set has already been created
+                const SpvReflectDescriptorSet *spvSet = sets[i];
+                auto it = std::find_if(m_sets.begin(), m_sets.end(),
+                                       [&](const std::shared_ptr<Set> &thisSet)
+                                       {
+                                           return thisSet->set == spvSet->set;
+                                       });
+                if (it != m_sets.end())
+                {
+                    // Append this shader's stage to all bindings of this set
+                    // This ensures that we can access the set from different shader stages (Vertex | Fragment | Compute, etc)
+                    for (auto &binding: (*it)->bindings)
+                    {
+                        if (binding.binding == spvSet->set)
+                        {
+                            switch (stage->GetShaderStage())
+                            {
+                                case Utils::Shader::ShaderStage::Vertex:
+                                    binding.layoutBinding.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+                                    break;
+                                case Utils::Shader::ShaderStage::Fragment:
+                                    binding.layoutBinding.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+                                    break;
+                                default:
+                                    binding.layoutBinding.stageFlags |= VK_SHADER_STAGE_ALL;
+                                    break;
+                            }
+                        }
+                    }
+                    set = *it; // Use the existing set
+                } else
+                {
+                    // Create a new set since we couldn't find one
+                    set = std::make_shared<Set>();
+                    set->set = spvSet->set;
+                    set->layout = VK_NULL_HANDLE;
+                    m_sets.push_back(set);
+                }
+
+                for (uint32_t j = 0; j < spvSet->binding_count; ++j)
+                {
+                    // Check if this binding hasn't been added already
+                    auto bindingIt = std::find_if(set->bindings.begin(), set->bindings.end(),
+                                                  [&](const Binding &b)
+                                                  {
+                                                      return b.binding == spvSet->bindings[j]->binding;
+                                                  });
+                    if (bindingIt != set->bindings.end())
+                    {
+                        // If it exists, we can skip adding it again
+                        continue;
+                    }
+                    const SpvReflectDescriptorBinding *spvBinding = spvSet->bindings[j];
+                    Binding binding;
+                    binding.binding = spvBinding->binding;
+                    binding.type = static_cast<VkDescriptorType>(spvBinding->descriptor_type);
+                    binding.name = spvBinding->name ? spvBinding->name : "UNKNOWN SET";
+
+                    switch (stage->GetShaderStage())
+                    {
+                        case Utils::Shader::ShaderStage::Vertex:
+                            binding.layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+                            break;
+                        case Utils::Shader::ShaderStage::Fragment:
+                            binding.layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+                            break;
+                        default:
+                            binding.layoutBinding.stageFlags = VK_SHADER_STAGE_ALL;
+                            break;
+                    }
+
+                    // Create layout binding
+                    binding.layoutBinding.binding = spvBinding->binding;
+                    binding.layoutBinding.descriptorType = static_cast<VkDescriptorType>(spvBinding->descriptor_type);
+                    binding.layoutBinding.descriptorCount = spvBinding->count;
+                    binding.layoutBinding.stageFlags = binding.stageFlags;
+
+                    // Add to set's bindings
+                    set->bindings.push_back(binding);
+                }
+
+                // Create the descriptor set layout
+                VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+                layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+                layoutInfo.bindingCount = static_cast<uint32_t>(set->bindings.size());
+
+                std::vector<VkDescriptorSetLayoutBinding> layoutBindings(set->bindings.size());
+                for (size_t j = 0; j < set->bindings.size(); ++j)
+                {
+                    layoutBindings[j] = set->bindings[j].layoutBinding;
+                }
+
+                layoutInfo.pBindings = reinterpret_cast<const VkDescriptorSetLayoutBinding *>(layoutBindings.data());
+
+                if (VkResult res = vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &layoutInfo, nullptr,
+                                                               &set->layout); res != VK_SUCCESS)
+                {
+                    spvReflectDestroyShaderModule(&spvModule);
+                    Logger::LogError("Failed to create descriptor set layout for shader: " + stage->GetShaderPath());
+                    return false;
+                }
+            }
         }
         return true;
     }
 
     void PipelineBindings::DestroyDescriptorSetLayouts()
     {
-        if (!layoutMap.empty())
+        for (auto &set: m_sets)
         {
-            for (const auto& [info, layout] : layoutMap)
+            if (set->layout != VK_NULL_HANDLE)
             {
-                vkDestroyDescriptorSetLayout(m_device.GetLogicalDevice(), layout, nullptr);
+                vkDestroyDescriptorSetLayout(m_device.GetLogicalDevice(), set->layout, nullptr);
+                set->layout = VK_NULL_HANDLE;
             }
-            layoutMap.clear();
+        }
+    }
+
+    bool PipelineBindings::CreatePushConstantRanges()
+    {
+        // Map to track push constants by name
+        std::map<std::string, PushConstantBlock> pushConstantMap;
+
+        // Enumerate all push constants from all shader stages
+        for (auto &[stage, spvModule]: m_spvModules)
+        {
+            // Enumerate push constant blocks
+            uint32_t pushConstantCount = 0;
+            auto result = spvReflectEnumeratePushConstantBlocks(&spvModule, &pushConstantCount, nullptr);
+            if (result != SPV_REFLECT_RESULT_SUCCESS)
+            {
+                Logger::LogError("Failed to enumerate push constants for shader: " + stage->GetShaderPath());
+                return false;
+            }
+
+            if (pushConstantCount == 0) continue;
+
+            // Populate vector with push constant information
+            std::vector<SpvReflectBlockVariable *> pushConstants(pushConstantCount);
+            result = spvReflectEnumeratePushConstantBlocks(&spvModule, &pushConstantCount, pushConstants.data());
+
+            // Iterate through each push constant block
+            for (uint32_t i = 0; i < pushConstantCount; ++i)
+            {
+                const SpvReflectBlockVariable *spvPushConstant = pushConstants[i];
+                std::string blockName = spvPushConstant->name ? spvPushConstant->name : "default";
+
+                VkShaderStageFlags stageFlag;
+                switch (stage->GetShaderStage())
+                {
+                    case Utils::Shader::ShaderStage::Vertex:
+                        stageFlag = VK_SHADER_STAGE_VERTEX_BIT;
+                        break;
+                    case Utils::Shader::ShaderStage::Fragment:
+                        stageFlag = VK_SHADER_STAGE_FRAGMENT_BIT;
+                        break;
+                    default:
+                        stageFlag = VK_SHADER_STAGE_ALL;
+                        break;
+                }
+
+                // Check if this block already exists
+                if (pushConstantMap.find(blockName) != pushConstantMap.end())
+                {
+                    // If exists, update the stage flags
+                    pushConstantMap[blockName].stageFlags |= stageFlag;
+                } else
+                {
+                    // Create new block
+                    PushConstantBlock pushConstantBlock;
+                    pushConstantBlock.name = blockName;
+                    pushConstantBlock.stageFlags = stageFlag;
+                    pushConstantBlock.offset = spvPushConstant->offset;
+                    pushConstantBlock.size = spvPushConstant->size;
+
+                    // Add members
+                    for (uint32_t j = 0; j < spvPushConstant->member_count; ++j)
+                    {
+                        const SpvReflectBlockVariable *member = &spvPushConstant->members[j];
+                        PushConstantMember pushConstantMember;
+                        pushConstantMember.name = member->name ? member->name : "";
+                        pushConstantMember.offset = member->offset;
+                        pushConstantMember.size = member->size;
+                        pushConstantMember.data = nullptr;
+                        pushConstantBlock.members.push_back(pushConstantMember);
+                    }
+
+                    pushConstantMap[blockName] = pushConstantBlock;
+                }
+            }
+        }
+
+        // Convert map to vector
+        m_pushConstants.clear();
+        for (const auto &[name, block]: pushConstantMap)
+        {
+            m_pushConstants.push_back(block);
+        }
+
+        return true;
+    }
+
+    void PipelineBindings::DestroyPushConstantRanges()
+    {
+        // Enumerate through all push constants and free data from the members
+        for (auto &pushConstant: m_pushConstants)
+        {
+            for (auto &member: pushConstant.members)
+            {
+                if (member.data)
+                {
+                    free(member.data);
+                    member.data = nullptr;
+                }
+            }
+            pushConstant.members.clear();
         }
     }
 
     bool PipelineBindings::CreateDescriptorPool()
     {
-        std::unordered_map<uint32_t, std::vector<Utils::Shader::ShaderBinding>> bindingsPerSet;
-        for (const auto& binding : m_reflection.descriptorSets)
-            bindingsPerSet[binding.set].push_back(binding);
-
-        std::unordered_map<VkDescriptorType, uint32_t> typeCounts;
-        for (const auto& [setNumber, bindings] : bindingsPerSet)
+        // For every frame in flight we need to create a descriptor pool
+        for (uint32_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
         {
-            for (const auto& binding : bindings)
-                typeCounts[binding.type] += binding.count;
-        }
+            std::unordered_map<VkDescriptorType, uint32_t> poolSizes;
 
-        // 3. Create pool sizes array
-        std::vector<VkDescriptorPoolSize> poolSizes;
-        uint32_t frames = m_device.GetMaxFramesInFlight();
-        for (const auto& [type, count] : typeCounts)
-        {
-            VkDescriptorPoolSize sz = {};
-            sz.type = type;
-            sz.descriptorCount = count * frames;
-            poolSizes.push_back(sz);
-        }
+            // Enumerate through all bindings to include all descriptor types
+            for (const auto &set: m_sets)
+            {
+                for (const auto &binding: set->bindings)
+                {
+                    if (binding.type != VK_DESCRIPTOR_TYPE_MAX_ENUM)
+                    {
+                        // Increment the count for this descriptor type
+                        poolSizes[binding.type] += binding.layoutBinding.descriptorCount;
+                    }
+                }
+            }
 
-        VkDescriptorPoolCreateInfo poolCI = {};
-        poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolCI.maxSets = static_cast<uint32_t>(bindingsPerSet.size() * frames);
-        poolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolCI.pPoolSizes = poolSizes.data();
+            // Cannot create descriptor sets without any descriptor types
+            if (poolSizes.empty())
+            {
+                Logger::Log("No descriptor types found for creating descriptor pool");
+                continue;
+            }
 
-        if (vkCreateDescriptorPool(m_device.GetLogicalDevice(), &poolCI, nullptr, &m_descriptorPool) != VK_SUCCESS)
-        {
-            Logger::LogError("Failed to create descriptor pool.");
-            return false;
+            // Convert the unordered_map to a vector of VkDescriptorPoolSize
+            std::vector<VkDescriptorPoolSize> poolSizesVec;
+            for (const auto &[type, count]: poolSizes)
+            {
+                VkDescriptorPoolSize poolSize = {};
+                poolSize.type = type;
+                poolSize.descriptorCount = count;
+                poolSizesVec.push_back(poolSize);
+            }
+
+            VkDescriptorPoolCreateInfo poolInfo = {};
+            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizesVec.size());
+            poolInfo.pPoolSizes = poolSizesVec.data();
+            poolInfo.maxSets = static_cast<uint32_t>(m_sets.size());
+
+            VkDescriptorPool descriptorPool;
+            if (vkCreateDescriptorPool(m_device.GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+            {
+                Logger::LogError("Failed to create descriptor pool");
+                return false;
+            }
+
+            m_descriptorPools.push_back(descriptorPool);
         }
         return true;
     }
 
     void PipelineBindings::DestroyDescriptorPool()
     {
-        if (m_descriptorPool != VK_NULL_HANDLE)
+        // Enumerate and destroy all descriptor pools
+        for (auto &pool: m_descriptorPools)
         {
-            vkDestroyDescriptorPool(m_device.GetLogicalDevice(), m_descriptorPool, nullptr);
-            m_descriptorPool = VK_NULL_HANDLE;
+            if (pool != VK_NULL_HANDLE)
+            {
+                vkDestroyDescriptorPool(m_device.GetLogicalDevice(), pool, nullptr);
+                pool = VK_NULL_HANDLE;
+            }
         }
     }
 
-    bool PipelineBindings::AllocateDescriptorSets()
+    bool PipelineBindings::AllocateDescriptorSets() const
     {
-        // 1. Group bindings by set number
-        std::unordered_map<uint32_t, std::vector<Utils::Shader::ShaderBinding>> bindingsPerSet;
-        for (const auto& binding : m_reflection.descriptorSets)
-            bindingsPerSet[binding.set].push_back(binding);
-
-        const uint32_t frames = m_device.GetMaxFramesInFlight();
-        for (const auto& [setNumber, bindings] : bindingsPerSet)
+        // Enumerate through all sets and allocate descriptor sets
+        for (auto &set: m_sets)
         {
-            DescriptorSetLayoutInfo info;
-            info.setNumber = setNumber;
-            info.bindings = bindings;
-
-            auto it = layoutMap.find(info);
-            if (it == layoutMap.end())
+            // Create a set for each frame in flight
+            for (uint32_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
             {
-                Logger::LogError("Descriptor set layout missing for set " + std::to_string(setNumber));
-                return false;
+                VkDescriptorSetLayout layout = set->layout;
+                if (layout == VK_NULL_HANDLE)
+                {
+                    Logger::LogError("Descriptor set layout is not initialized for set {}", set->set);
+                    return false;
+                }
+
+                VkDescriptorSetAllocateInfo allocInfo = {};
+                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                allocInfo.descriptorPool = m_descriptorPools[i];
+                allocInfo.descriptorSetCount = 1;
+                allocInfo.pSetLayouts = &layout;
+
+                VkDescriptorSet descriptorSet;
+                if (vkAllocateDescriptorSets(m_device.GetLogicalDevice(), &allocInfo, &descriptorSet) != VK_SUCCESS)
+                {
+                    Logger::LogError("Failed to allocate descriptor set for set {}", set->set);
+                    return false;
+                }
+
+                // Add the allocated descriptor set to the set's collection
+                set->descriptorSets.push_back({descriptorSet, m_descriptorPools[i]});
             }
-            VkDescriptorSetLayout layout = it->second;
-
-            std::vector layouts(frames, layout);
-
-            VkDescriptorSetAllocateInfo allocInfo = {};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = m_descriptorPool;
-            allocInfo.descriptorSetCount = frames;
-            allocInfo.pSetLayouts = layouts.data();
-
-            std::vector<VkDescriptorSet> sets(frames);
-            if (vkAllocateDescriptorSets(m_device.GetLogicalDevice(), &allocInfo, sets.data()) != VK_SUCCESS)
-            {
-                Logger::LogError("Failed to allocate descriptor sets for set " + std::to_string(setNumber));
-                return false;
-            }
-            m_descriptorSets[setNumber] = std::move(sets);
         }
         return true;
     }
 
-    void PipelineBindings::FreeDescriptorSets()
+    void PipelineBindings::DestroyDescriptorSets() const
     {
-        m_descriptorSets.clear();
+        // Enumerate through all sets and destroy their descriptor sets
+        for (auto &set: m_sets)
+        {
+            for (auto &[descriptorSet, descriptorPool]: set->descriptorSets)
+            {
+                if (descriptorSet != VK_NULL_HANDLE)
+                {
+                    vkFreeDescriptorSets(m_device.GetLogicalDevice(), descriptorPool, 1, &descriptorSet);
+                    descriptorSet = VK_NULL_HANDLE;
+                }
+            }
+            set->descriptorSets.clear();
+        }
     }
 }

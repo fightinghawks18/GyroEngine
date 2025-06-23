@@ -63,9 +63,9 @@ namespace GyroEngine::Resources
         m_mvpBuffer->Map(&m_mvp);
 
         auto pipelineBindings = m_pipeline->GetPipelineBindings();
-        if (pipelineBindings->DoesBindingExist("ubo"))
+        if (pipelineBindings->DoesBindingExist("mvp"))
         {
-            pipelineBindings->UpdateBufferSet("ubo", m_mvpBuffer, frameIndex);
+            pipelineBindings->UpdateDescriptorBuffer("mvp", m_mvpBuffer, frameIndex);
         }
     }
 
@@ -77,15 +77,7 @@ namespace GyroEngine::Resources
         m_mvpBuffer->Bind(frame);
 
         auto pipelineBindings = m_pipeline->GetPipelineBindings();
-        if (pipelineBindings->DoesBindingExist("ubo"))
-        {
-            pipelineBindings->BindSet("ubo", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
-        }
-
-        if (pipelineBindings->DoesBindingExist("uTexture"))
-        {
-            pipelineBindings->BindSet("uTexture", frame.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineLayout(), frame.frameIndex);
-        }
+        pipelineBindings->Bind(frame, m_pipeline->GetPipelineLayout());
     }
 
     void Mesh::Draw(const Rendering::FrameContext &frame) const

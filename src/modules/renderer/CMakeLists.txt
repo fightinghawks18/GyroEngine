@@ -45,8 +45,6 @@ add_library(RendererModule STATIC
         factories/mesh_factory.cpp
         factories/mesh_factory.h
         rendering/commands/command.h
-        resources/pipeline_bindings.cpp
-        resources/pipeline_bindings.h
         utilities/mesh.h
         resources/material.cpp
         resources/material.h
@@ -55,6 +53,9 @@ add_library(RendererModule STATIC
         resources/texture.cpp
         resources/texture.h
         resources/light_data.h
+        resources/pipeline_bindings.cpp
+        resources/pipeline_bindings.h
+        resources/buffer_types.h
 )
 
 set_target_properties(RendererModule

@@ -81,17 +81,17 @@ namespace GyroEngine::Resources
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
         m_descriptorSetLayouts.clear();
-        const auto descriptorLayouts = m_pipelineBindings->GetDescriptorSetLayouts();
+        const auto descriptorLayouts = m_pipelineBindings->GetSets();
         m_descriptorSetLayouts.reserve(descriptorLayouts.size());
         for (const auto &descriptorLayout: descriptorLayouts)
         {
-            m_descriptorSetLayouts.push_back(descriptorLayout);
+            m_descriptorSetLayouts.push_back(descriptorLayout->layout);
         }
 
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_descriptorSetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = m_descriptorSetLayouts.data();
 
-        const auto pushConstants = m_pipelineBindings->GetReflection().pushConstants;
+        const auto pushConstants = m_pipelineBindings->GetPushConstants();
 
         if (!pushConstants.empty())
         {
@@ -100,7 +100,7 @@ namespace GyroEngine::Resources
             for (const auto &pushConstant: pushConstants)
             {
                 VkPushConstantRange pushConstantRange = {};
-                pushConstantRange.stageFlags = pushConstant.stage;
+                pushConstantRange.stageFlags = pushConstant.stageFlags;
                 pushConstantRange.offset = pushConstant.offset;
                 pushConstantRange.size = pushConstant.size;
                 m_pushConstantRanges.push_back(pushConstantRange);

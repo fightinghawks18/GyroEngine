@@ -22,6 +22,12 @@ namespace GyroEngine::Utils::Shader
         Compute
     };
 
+    enum class ShaderStage
+    {
+        Vertex,
+        Fragment
+    };
+
     struct ShaderBinding {
         std::string name;
         uint32_t set;
