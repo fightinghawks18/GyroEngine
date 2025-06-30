@@ -298,7 +298,7 @@ int main()
             proj[1][1] *= -1.0f;
 
             cube->SetTransforms(view, proj);
-            //cube->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
+            cube->GetRotation() += glm::vec3(0.0f, 0.001f, 0.0f);
 
             if (pipelineBindings->DoesBindingExist("usTexture"))
             {
