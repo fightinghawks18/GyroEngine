@@ -20,7 +20,7 @@ namespace GyroEngine::Platform
         bool Init();
         void Destroy();
 
-        void Update();
+        void Update(const SDL_Event& event);
 
         [[nodiscard]] bool IsWindowAlive() const {
             return m_window != nullptr;

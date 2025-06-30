@@ -36,15 +36,11 @@ namespace GyroEngine::Platform
         m_requestedQuit = false;
     }
 
-    void Window::Update()
+    void Window::Update(const SDL_Event& event)
     {
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
+        if (event.type == SDL_EVENT_QUIT)
         {
-            if (event.type == SDL_EVENT_QUIT)
-            {
-                m_requestedQuit = true;
-            }
+            m_requestedQuit = true;
         }
     }
 }

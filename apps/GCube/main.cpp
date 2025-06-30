@@ -7,11 +7,12 @@
 
 #include <SDL3/SDL.h>
 
-#include "Utils.h"
+#include "utils.h"
 #include "window.h"
 #include "../../src/core/engine.h"
 #include "context/rendering_device.h"
 #include "factories/mesh_factory.h"
+#include "input/input.h"
 #include "rendering/renderer.h"
 #include "rendering/rendergraph/render_graph.h"
 #include "rendering/rendergraph/passes/clear_pass.h"
@@ -22,24 +23,22 @@
 #include "resources/texture.h"
 #include "utilities/shader.h"
 
+#include "debug/logger.h"
+
 using namespace GyroEngine;
+using namespace Platform;
 
 int main()
 {
-    if (!SDL_Init(SDL_INIT_VIDEO))
-    {
-        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
-        return -1;
-    }
     // Compile shaders first
     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/post_effects/sky.frag",
-                                     shaderc_fragment_shader);
+                                       shaderc_fragment_shader);
     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/post_effects/fullscreen_quad.vert",
-                                 shaderc_vertex_shader);
-     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert",
-                                     shaderc_vertex_shader);
+                                       shaderc_vertex_shader);
+    Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.vert",
+                                       shaderc_vertex_shader);
     Utils::Shader::CompileShaderToFile(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag",
-                                     shaderc_fragment_shader);
+                                       shaderc_fragment_shader);
 
     auto& engine = Engine::Get();
     if (!engine.Init())
@@ -48,15 +47,8 @@ int main()
         return -1;
     }
 
-    auto window = std::make_unique<Platform::Window>();
-    if (!window->Init())
-    {
-        std::cerr << "Failed to create window." << std::endl;
-        return -1;
-    }
-
     auto renderer = std::make_shared<Rendering::Renderer>(engine.GetDevice());
-    if (!renderer->Init(window.get()))
+    if (!renderer->Init(engine.GetWindow().get()))
     {
         std::cerr << "Failed to initialize renderer." << std::endl;
         return -1;
@@ -91,7 +83,7 @@ int main()
 
     auto fragmentShader = std::make_shared<Resources::Shader>(engine.GetDevice());
     fragmentShader->SetShaderPath(Utils::GetExecutableDir() + "/content/shaders/geometry/object.frag.spv")
-                    .SetShaderStage(Utils::Shader::ShaderStage::Fragment);
+                  .SetShaderStage(Utils::Shader::ShaderStage::Fragment);
     if (!fragmentShader->Init())
     {
         std::cerr << "Failed to initialize fragment shader." << std::endl;
@@ -129,7 +121,8 @@ int main()
     colorBlendState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     colorBlendState.alphaBlendOp = VK_BLEND_OP_ADD;
-    colorBlendState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+        VK_COLOR_COMPONENT_A_BIT;
 
     pipelineConfig.shaderStages = shaderStages;
     pipelineConfig.colorFormat = renderer->GetSwapchainColorFormat();
@@ -139,11 +132,11 @@ int main()
     pipelineConfig.rasterizerState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     pipelineConfig.vertexInputState.addBinding(0, sizeof(Types::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
-                                    .addAttribute("ivVertexPosition", offsetof(Types::Vertex, position))
-                                    .addAttribute("ivVertexNormal", offsetof(Types::Vertex, normal))
-                                    .addAttribute("ivVertexUV", offsetof(Types::Vertex, texCoords))
-                                    .addAttribute("ivVertexTangent", offsetof(Types::Vertex, tangent))
-                                    .addAttribute("ivVertexColor", offsetof(Types::Vertex, color));
+                  .addAttribute("ivVertexPosition", offsetof(Types::Vertex, position))
+                  .addAttribute("ivVertexNormal", offsetof(Types::Vertex, normal))
+                  .addAttribute("ivVertexUV", offsetof(Types::Vertex, texCoords))
+                  .addAttribute("ivVertexTangent", offsetof(Types::Vertex, tangent))
+                  .addAttribute("ivVertexColor", offsetof(Types::Vertex, color));
 
     pipeline->SetPipelineBindings(pipelineBindings);
     if (!pipeline->Init())
@@ -159,7 +152,7 @@ int main()
         return -1;
     }
 
-    texture->SetTexturePath(Utils::GetExecutableDir() + "/content/textures/woolymammoth.jpg");
+    texture->SetTexturePath(Utils::GetExecutableDir() + "/content/textures/woolymammoth.jpeg");
     if (!texture->Generate())
     {
         std::cerr << "Failed to generate texture." << std::endl;
@@ -202,9 +195,9 @@ int main()
     // Create light buffer
     auto lightBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
     lightBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
-                .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE)
-                .SetSize(sizeof(Resources::LightBuffer))
-                .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+               .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE)
+               .SetSize(sizeof(Resources::LightBuffer))
+               .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     if (!lightBuffer->Init())
     {
         std::cerr << "Failed to initialize light buffer." << std::endl;
@@ -224,82 +217,118 @@ int main()
         return -1;
     }
 
+    glm::vec3 cameraPosition = {0.0f, 0.0f, -6.0f};
+
     Resources::CameraBuffer camera = {};
-    camera.position = glm::vec3(4.0f, 3.0f, 3.0f);
-    camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera.position = cameraPosition;
+    camera.direction = glm::vec3(0.0f, 0.0f, 0.0f);
     camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
     camera.fov = glm::radians(45.0f);
     camera.aspect = 1.0f;
     camera.nearPlane = 0.1f;
     camera.farPlane = 10.0f;
 
-    cameraBuffer->Map(&camera);
+    glm::vec2 mousePos = Input::GetMousePosition();
+    glm::vec2 mousePos2 = mousePos;
 
+    float yaw = 0.0f;
+    float pitch = 0.0f;
 
+    auto wind = engine.GetWindow();
 
-
-    while (!window->HasRequestedQuit())
+        engine.SetDestroyFunction([&]()
     {
-        window->Update();
-        if (window->IsWindowAlive())
+        pipeline.reset();
+        fragmentShader.reset();
+        vertexShader.reset();
+        pipelineBindings.reset();
+        renderer.reset();
+        cube.reset();
+    });
+
+    engine.SetUpdateFunction([&]()
+    {
+        if (Input::GetKeyValue<bool>(KeyCode::Escape))
         {
-            if (renderer->RecordFrame())
-            {
-                scenePass->AddGeometry(cube);
-
-                const auto frame = renderer->GetFrameContext();
-
-                view = glm::lookAtRH(glm::vec3(4.0f, 3.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                proj = glm::perspectiveRH(glm::radians(45.0f),
-                                          static_cast<float>(frame.swapchainExtent.width) /
-                                          static_cast<float>(frame.swapchainExtent.height),
-                                          0.1f, 10.0f);
-                proj[1][1] *= -1.0f;
-
-                cube->SetTransforms(view, proj);
-                cube->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
-
-                if (pipelineBindings->DoesBindingExist("usTexture"))
-                {
-                    pipelineBindings->UpdateDescriptorImage("usTexture", texture->GetSampler(), texture->GetImage(), frame.frameIndex);
-                }
-                if (pipelineBindings->DoesBindingExist("cam"))
-                {
-                    pipelineBindings->UpdateDescriptorBuffer("cam", cameraBuffer, frame.frameIndex);
-                }
-                if (pipelineBindings->DoesBindingExist("lightBuffer"))
-                {
-                    pipelineBindings->UpdateDescriptorBuffer("lightBuffer", lightBuffer, frame.frameIndex);
-                }
-
-                renderGraph->AddPass(clearPass);
-                renderGraph->AddPass(scenePass);
-
-                Rendering::Viewport viewport{};
-                renderer->BindViewport(viewport);
-                renderGraph->Execute(*renderer);
-                renderer->SubmitFrame();
-            } else
-            {
-                renderer->NextFrameIndex();
-            }
-        } else
-        {
-            break;
+            engine.Close();
         }
-    }
+        if (renderer->RecordFrame())
+        {
+            scenePass->AddGeometry(cube);
 
-    engine.GetDevice().WaitForIdle();
+            const auto frame = renderer->GetFrameContext();
 
-    // Cleanup resources
-    cube.reset();
-    pipeline.reset();
-    fragmentShader.reset();
-    vertexShader.reset();
-    pipelineBindings.reset();
+            mousePos = Input::GetMousePosition();
+            glm::vec2 mouseDelta = (mousePos - mousePos2) * 0.005f; // Invert Y axis for camera movement
+            mousePos2 = mousePos;
 
-    // Cleanup renderer, device and window
-    renderer.reset();
-    window.reset();
+            yaw -= mouseDelta.x;
+            pitch -= mouseDelta.y;
+
+            glm::vec3 cameraDirection;
+            cameraDirection.x = cos(pitch) * sin(yaw);
+            cameraDirection.y = sin(pitch);
+            cameraDirection.z = cos(pitch) * cos(yaw);
+            cameraDirection = glm::normalize(cameraDirection);
+
+            glm::vec3 forward = glm::normalize(cameraDirection);
+            glm::vec3 right = glm::normalize(glm::cross(forward, camera.up));
+
+            float moveSpeed = 0.005f;
+            glm::vec3 movement = glm::vec3(0.0f);
+
+            if (Input::GetKeyValue<bool>(KeyCode::W)) movement += forward * moveSpeed;
+            if (Input::GetKeyValue<bool>(KeyCode::S)) movement -= forward * moveSpeed;
+            if (Input::GetKeyValue<bool>(KeyCode::D)) movement += right * moveSpeed;
+            if (Input::GetKeyValue<bool>(KeyCode::A)) movement -= right * moveSpeed;
+
+            cameraPosition += movement;
+
+            camera.position = cameraPosition;
+            camera.direction = camera.position + cameraDirection;
+            cameraBuffer->Map(&camera);
+
+            Logger::Log("POS: {}, {}, {}", camera.position.x, camera.position.y, camera.position.z);
+
+            view = glm::lookAtRH(camera.position, camera.direction, camera.up);
+            proj = glm::perspectiveRH(glm::radians(90.0f),
+                                      static_cast<float>(frame.swapchainExtent.width) /
+                                      static_cast<float>(frame.swapchainExtent.height),
+                                      0.1f, 1000.0f);
+            proj[1][1] *= -1.0f;
+
+            cube->SetTransforms(view, proj);
+            //cube->GetRotation() += glm::vec3(0.0f, 0.01f, 0.0f);
+
+            if (pipelineBindings->DoesBindingExist("usTexture"))
+            {
+                pipelineBindings->UpdateDescriptorImage("usTexture", texture->GetSampler(), texture->GetImage(),
+                                                        frame.frameIndex);
+            }
+            if (pipelineBindings->DoesBindingExist("cam"))
+            {
+                pipelineBindings->UpdateDescriptorBuffer("cam", cameraBuffer, frame.frameIndex);
+            }
+            if (pipelineBindings->DoesBindingExist("lightBuffer"))
+            {
+                pipelineBindings->UpdateDescriptorBuffer("lightBuffer", lightBuffer, frame.frameIndex);
+            }
+
+            renderGraph->AddPass(clearPass);
+            renderGraph->AddPass(scenePass);
+
+            Rendering::Viewport viewport{};
+            renderer->BindViewport(viewport);
+            renderGraph->Execute(*renderer);
+            renderer->SubmitFrame();
+        }
+        else
+        {
+            renderer->NextFrameIndex();
+        }
+    });
+
+    engine.Run();
+
     return 0;
 }

@@ -56,6 +56,8 @@ add_library(RendererModule STATIC
         resources/pipeline_bindings.cpp
         resources/pipeline_bindings.h
         resources/buffer_types.h
+        implementation/glm_implementation.h
+        implementation/glm_implementation.cpp
 )
 
 set_target_properties(RendererModule

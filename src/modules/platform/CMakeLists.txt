@@ -1,7 +1,10 @@
 find_package(SDL3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 add_library(PlatformModule STATIC
+        input/input.cpp
         window.cpp
+        input/inputils.h
 )
 
 set_target_properties(PlatformModule
@@ -10,7 +13,9 @@ set_target_properties(PlatformModule
 )
 
 target_link_libraries(PlatformModule PUBLIC
-    SDL3::SDL3
+        UtilitiesModule
+        SDL3::SDL3
+        glm::glm
 )
 
 target_include_directories(PlatformModule PUBLIC
