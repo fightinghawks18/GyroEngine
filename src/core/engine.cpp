@@ -5,7 +5,7 @@
 #include "engine.h"
 
 #include "factories/mesh_factory.h"
-#include "input/input.h"
+#include "input/keyboard.h"
 
 namespace GyroEngine
 {
@@ -52,7 +52,7 @@ namespace GyroEngine
                 }
                 m_window->Update(event);
                 // Pass the event to the input system
-                Platform::Input::Get().Update(event);
+                Platform::Keyboard::Get().Update(event);
             }
 
             m_updateFunction();

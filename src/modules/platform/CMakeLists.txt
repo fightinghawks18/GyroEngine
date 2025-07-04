@@ -2,9 +2,10 @@ find_package(SDL3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
 add_library(PlatformModule STATIC
-        input/input.cpp
         window.cpp
-        input/inputils.h
+        input/keyboard.cpp
+        input/keyboard.h
+        input/inpututils.h
 )
 
 set_target_properties(PlatformModule

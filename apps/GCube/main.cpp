@@ -12,7 +12,6 @@
 #include "../../src/core/engine.h"
 #include "context/rendering_device.h"
 #include "factories/mesh_factory.h"
-#include "input/input.h"
 #include "rendering/renderer.h"
 #include "rendering/rendergraph/render_graph.h"
 #include "rendering/rendergraph/passes/clear_pass.h"
@@ -24,6 +23,7 @@
 #include "utilities/shader.h"
 
 #include "debug/logger.h"
+#include "input/keyboard.h"
 
 using namespace GyroEngine;
 using namespace Platform;
@@ -61,11 +61,6 @@ int main()
 
     auto view = glm::mat4(1.0f);
     auto proj = glm::mat4(1.0f);
-
-    // Enable render graph debug mode if in debug build
-#ifdef DEBUG
-    renderGraph->SetDebug(true);
-#endif
 
     clearPass->SetClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 
@@ -167,56 +162,6 @@ int main()
         return -1;
     }
 
-    // Create light source
-    Resources::LightSource light = {};
-    light.position = {4.0f, 1.0f, 0.0f};
-    light.direction = {0.0f, -1.0f, 0.0f};
-    light.color = {1.0f, 1.0f, 1.0f};
-    light.angle = 500.0f;
-    light.type = 0;
-    light.intensity = 1.0f;
-    light.range = 100.0f;
-
-    Resources::LightSource light2 = {};
-    light.position = {-4.0f, 1.0f, 0.0f};
-    light.direction = {0.0f, -1.0f, 0.0f};
-    light.color = {1.0f, 0.0f, 0.0f};
-    light.angle = 500.0f;
-    light.type = 0;
-    light.intensity = 1.0f;
-    light.range = 100.0f;
-
-    Resources::LightBuffer lights = {};
-    lights.lights[0] = light;
-    lights.lights[1] = light2;
-    lights.lightCount = 2;
-
-
-    // Create light buffer
-    auto lightBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
-    lightBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
-               .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE)
-               .SetSize(sizeof(Resources::LightBuffer))
-               .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-    if (!lightBuffer->Init())
-    {
-        std::cerr << "Failed to initialize light buffer." << std::endl;
-        return -1;
-    }
-    lightBuffer->Map(&lights);
-
-    // Create camera buffer
-    auto cameraBuffer = std::make_shared<Resources::Buffer>(engine.GetDevice());
-    cameraBuffer->SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
-                .SetSharingMode(VK_SHARING_MODE_EXCLUSIVE)
-                .SetSize(sizeof(Resources::CameraBuffer) * 1)
-                .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    if (!cameraBuffer->Init())
-    {
-        Logger::LogError("Failed to initialize camera buffer.");
-        return -1;
-    }
-
     glm::vec3 cameraPosition = {0.0f, 0.0f, -6.0f};
 
     Resources::CameraBuffer camera = {};
@@ -228,7 +173,7 @@ int main()
     camera.nearPlane = 0.1f;
     camera.farPlane = 10.0f;
 
-    glm::vec2 mousePos = Input::GetMousePosition();
+    glm::vec2 mousePos = glm::vec2(0);
     glm::vec2 mousePos2 = mousePos;
 
     float yaw = 0.0f;
@@ -236,19 +181,20 @@ int main()
 
     auto wind = engine.GetWindow();
 
-        engine.SetDestroyFunction([&]()
+    engine.SetDestroyFunction([&]()
     {
         pipeline.reset();
-        fragmentShader.reset();
-        vertexShader.reset();
         pipelineBindings.reset();
         renderer.reset();
+        fragmentShader.reset();
+        vertexShader.reset();
+        texture.reset();
         cube.reset();
     });
 
     engine.SetUpdateFunction([&]()
     {
-        if (Input::GetKeyValue<bool>(KeyCode::Escape))
+        if (Keyboard::IsKeyDown(Key::Escape))
         {
             engine.Close();
         }
@@ -257,13 +203,6 @@ int main()
             scenePass->AddGeometry(cube);
 
             const auto frame = renderer->GetFrameContext();
-
-            mousePos = Input::GetMousePosition();
-            glm::vec2 mouseDelta = (mousePos - mousePos2) * 0.005f; // Invert Y axis for camera movement
-            mousePos2 = mousePos;
-
-            yaw -= mouseDelta.x;
-            pitch -= mouseDelta.y;
 
             glm::vec3 cameraDirection;
             cameraDirection.x = cos(pitch) * sin(yaw);
@@ -277,18 +216,15 @@ int main()
             float moveSpeed = 0.005f;
             glm::vec3 movement = glm::vec3(0.0f);
 
-            if (Input::GetKeyValue<bool>(KeyCode::W)) movement += forward * moveSpeed;
-            if (Input::GetKeyValue<bool>(KeyCode::S)) movement -= forward * moveSpeed;
-            if (Input::GetKeyValue<bool>(KeyCode::D)) movement += right * moveSpeed;
-            if (Input::GetKeyValue<bool>(KeyCode::A)) movement -= right * moveSpeed;
+            if (Keyboard::IsKeyDown(Key::W)) movement += forward * moveSpeed;
+            if (Keyboard::IsKeyDown(Key::S)) movement -= forward * moveSpeed;
+            if (Keyboard::IsKeyDown(Key::D)) movement += right * moveSpeed;
+            if (Keyboard::IsKeyDown(Key::A)) movement -= right * moveSpeed;
 
             cameraPosition += movement;
 
             camera.position = cameraPosition;
             camera.direction = camera.position + cameraDirection;
-            cameraBuffer->Map(&camera);
-
-            Logger::Log("POS: {}, {}, {}", camera.position.x, camera.position.y, camera.position.z);
 
             view = glm::lookAtRH(camera.position, camera.direction, camera.up);
             proj = glm::perspectiveRH(glm::radians(90.0f),
@@ -304,14 +240,6 @@ int main()
             {
                 pipelineBindings->UpdateDescriptorImage("usTexture", texture->GetSampler(), texture->GetImage(),
                                                         frame.frameIndex);
-            }
-            if (pipelineBindings->DoesBindingExist("cam"))
-            {
-                pipelineBindings->UpdateDescriptorBuffer("cam", cameraBuffer, frame.frameIndex);
-            }
-            if (pipelineBindings->DoesBindingExist("lightBuffer"))
-            {
-                pipelineBindings->UpdateDescriptorBuffer("lightBuffer", lightBuffer, frame.frameIndex);
             }
 
             renderGraph->AddPass(clearPass);

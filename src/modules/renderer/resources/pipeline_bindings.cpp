@@ -111,7 +111,7 @@ namespace GyroEngine::Resources
         writeDesc.pBufferInfo = &bufferInfoDesc;
 
         vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &writeDesc, 0, nullptr);
-        Logger::Log("Updated descriptor buffer for binding: {}", name);
+        //Logger::Log("Updated descriptor buffer for binding: {}", name);
     }
 
     void PipelineBindings::UpdateDescriptorImage(const std::string &name, const SamplerHandle &sampler,
@@ -140,7 +140,7 @@ namespace GyroEngine::Resources
         writeDesc.pImageInfo = &imageInfoDesc;
 
         vkUpdateDescriptorSets(m_device.GetLogicalDevice(), 1, &writeDesc, 0, nullptr);
-        Logger::Log("Updated descriptor image for binding: {}", name);
+        //Logger::Log("Updated descriptor image for binding: {}", name);
     }
 
     void PipelineBindings::UpdatePushConstant(const std::string &block, const std::string &name,
@@ -330,7 +330,7 @@ namespace GyroEngine::Resources
 
     bool PipelineBindings::CreateDescriptorSetLayouts()
     {
-        // Iterate through each shader stage and create descriptor set layouts
+        // Iterate through each shader stage and setup the bindings
         for (auto &[stage, spvModule]: m_spvModules)
         {
             // Reflect shader's descriptor sets
@@ -432,28 +432,32 @@ namespace GyroEngine::Resources
                     // Add to set's bindings
                     set->bindings.push_back(binding);
                 }
-
-                // Create the descriptor set layout
-                VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-                layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-                layoutInfo.bindingCount = static_cast<uint32_t>(set->bindings.size());
-
-                std::vector<VkDescriptorSetLayoutBinding> layoutBindings(set->bindings.size());
-                for (size_t j = 0; j < set->bindings.size(); ++j)
-                {
-                    layoutBindings[j] = set->bindings[j].layoutBinding;
-                }
-
-                layoutInfo.pBindings = reinterpret_cast<const VkDescriptorSetLayoutBinding *>(layoutBindings.data());
-
-                if (VkResult res = vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &layoutInfo, nullptr,
-                                                               &set->layout); res != VK_SUCCESS)
-                {
-                    spvReflectDestroyShaderModule(&spvModule);
-                    Logger::LogError("Failed to create descriptor set layout for shader: " + stage->GetShaderPath());
-                    return false;
-                }
             }
+            Logger::Log("Created descriptor set bindings for shader {} with {} sets", stage->GetShaderPath(), setCount);
+        }
+
+        // Iterate through all sets and create the layouts from all the bindings
+        for (const auto& set : m_sets)
+        {
+            // Create the descriptor set layout
+            VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = static_cast<uint32_t>(set->bindings.size());
+            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(set->bindings.size());
+            for (size_t j = 0; j < set->bindings.size(); ++j)
+            {
+                layoutBindings[j] = set->bindings[j].layoutBinding;
+            }
+
+            layoutInfo.pBindings = reinterpret_cast<const VkDescriptorSetLayoutBinding *>(layoutBindings.data());
+
+            if (VkResult res = vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &layoutInfo, nullptr,
+                                                           &set->layout); res != VK_SUCCESS)
+            {
+                Logger::LogError("Failed to create descriptor set layout for set {}", set->set);
+                return false;
+            }
+            Logger::Log("Created layout for set {}, had {} bindings", set->set, set->bindings.size());
         }
         return true;
     }
