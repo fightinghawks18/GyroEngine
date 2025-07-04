@@ -158,6 +158,35 @@ namespace GyroEngine::Resources
 
         [[nodiscard]] bool AllocateDescriptorSets() const;
         void DestroyDescriptorSets() const;
+
+        static VkDescriptorType ToVkDescriptorType(const SpvReflectDescriptorType reflectType) {
+            switch (reflectType) {
+            case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
+                return VK_DESCRIPTOR_TYPE_SAMPLER;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+                return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+                return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+                return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+                return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+                return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+                return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+            case SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+                return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            default:
+                return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+            }
+        }
     };
 } // Resources
 // GyroEngine

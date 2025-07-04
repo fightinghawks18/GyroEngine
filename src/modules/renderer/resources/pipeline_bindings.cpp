@@ -86,7 +86,7 @@ namespace GyroEngine::Resources
         m_descriptorPools.clear();
     }
 
-    void PipelineBindings::UpdateDescriptorBuffer(const std::string &name, const BufferHandle &buffer,
+    void PipelineBindings::UpdateDescriptorBuffer(const std::string& name, const BufferHandle& buffer,
                                                   uint32_t index)
     {
         auto bindingOpt = GetBinding(name);
@@ -96,6 +96,9 @@ namespace GyroEngine::Resources
             return;
         }
 
+        const auto set = bindingOpt->first;
+        const auto binding = bindingOpt->second;
+
         VkDescriptorBufferInfo bufferInfoDesc = {};
         bufferInfoDesc.buffer = buffer->GetBuffer();
         bufferInfoDesc.offset = 0;
@@ -103,10 +106,10 @@ namespace GyroEngine::Resources
 
         VkWriteDescriptorSet writeDesc = {};
         writeDesc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDesc.dstSet = bindingOpt->first.descriptorSets[index].descriptorSet;
-        writeDesc.dstBinding = bindingOpt->second.binding;
+        writeDesc.dstSet = set.descriptorSets[index].descriptorSet;
+        writeDesc.dstBinding = binding.binding;
         writeDesc.dstArrayElement = 0;
-        writeDesc.descriptorType = bindingOpt->second.type;
+        writeDesc.descriptorType = binding.type;
         writeDesc.descriptorCount = 1;
         writeDesc.pBufferInfo = &bufferInfoDesc;
 
@@ -114,8 +117,8 @@ namespace GyroEngine::Resources
         //Logger::Log("Updated descriptor buffer for binding: {}", name);
     }
 
-    void PipelineBindings::UpdateDescriptorImage(const std::string &name, const SamplerHandle &sampler,
-                                                 const ImageHandle &image,
+    void PipelineBindings::UpdateDescriptorImage(const std::string& name, const SamplerHandle& sampler,
+                                                 const ImageHandle& image,
                                                  uint32_t index)
     {
         const auto bindingOpt = GetBinding(name);
@@ -143,8 +146,8 @@ namespace GyroEngine::Resources
         //Logger::Log("Updated descriptor image for binding: {}", name);
     }
 
-    void PipelineBindings::UpdatePushConstant(const std::string &block, const std::string &name,
-                                              const void *data, size_t size, uint32_t offset)
+    void PipelineBindings::UpdatePushConstant(const std::string& block, const std::string& name,
+                                              const void* data, size_t size, uint32_t offset)
     {
         // Check for null data pointer first
         if (!data)
@@ -160,7 +163,7 @@ namespace GyroEngine::Resources
             return;
         }
 
-        auto &[b, m] = pushConstantOpt.value();
+        auto& [b, m] = pushConstantOpt.value();
         uint32_t memberOffset = m.offset + offset;
 
         // Ensure the size does not exceed the push constant member size
@@ -183,21 +186,21 @@ namespace GyroEngine::Resources
         }
 
         // Copy new data to the push constant data
-        uint8_t *dataPtr = static_cast<uint8_t *>(m.data) + memberOffset;
+        uint8_t* dataPtr = static_cast<uint8_t*>(m.data) + memberOffset;
         memcpy(dataPtr, data, size);
     }
 
-    void PipelineBindings::BindConstants(const Rendering::FrameContext &frameContext, VkPipelineLayout pipelineLayout)
+    void PipelineBindings::BindConstants(const Rendering::FrameContext& frameContext, VkPipelineLayout pipelineLayout)
     {
         return; // No push constants to bind in this implementation
     }
 
-    void PipelineBindings::Bind(const Rendering::FrameContext &frameContext, VkPipelineLayout pipelineLayout)
+    void PipelineBindings::Bind(const Rendering::FrameContext& frameContext, VkPipelineLayout pipelineLayout)
     {
         VkCommandBuffer cmd = frameContext.cmd;
 
         // Bind descriptor sets for each set
-        for (const auto &set: m_sets)
+        for (const auto& set : m_sets)
         {
             if (set->descriptorSets.empty() || set->layout == VK_NULL_HANDLE)
                 continue;
@@ -213,12 +216,12 @@ namespace GyroEngine::Resources
         }
     }
 
-    std::optional<std::pair<PipelineBindings::Set, PipelineBindings::Binding> > PipelineBindings::GetBinding(
-        const std::string &name)
+    std::optional<std::pair<PipelineBindings::Set, PipelineBindings::Binding>> PipelineBindings::GetBinding(
+        const std::string& name)
     {
-        for (const auto &set: m_sets)
+        for (const auto& set : m_sets)
         {
-            for (const auto &binding: set->bindings)
+            for (const auto& binding : set->bindings)
             {
                 if (binding.name == name)
                 {
@@ -229,14 +232,14 @@ namespace GyroEngine::Resources
         return std::nullopt;
     }
 
-    std::optional<std::pair<PipelineBindings::PushConstantBlock, PipelineBindings::PushConstantMember> >
-    PipelineBindings::GetPushConstant(const std::string &block, const std::string &name)
+    std::optional<std::pair<PipelineBindings::PushConstantBlock, PipelineBindings::PushConstantMember>>
+    PipelineBindings::GetPushConstant(const std::string& block, const std::string& name)
     {
-        for (const auto &pushConstant: m_pushConstants)
+        for (const auto& pushConstant : m_pushConstants)
         {
             if (pushConstant.name == block)
             {
-                for (const auto &member: pushConstant.members)
+                for (const auto& member : pushConstant.members)
                 {
                     if (member.name == name)
                     {
@@ -251,7 +254,7 @@ namespace GyroEngine::Resources
     bool PipelineBindings::CreateSpvModules()
     {
         // Enumerate through all shader stages and create SPIR-V modules to be reflected from
-        for (const auto &stage: m_shaderStages)
+        for (const auto& stage : m_shaderStages)
         {
             // Reflect shader module
             SpvReflectShaderModule spvModule = {};
@@ -277,7 +280,7 @@ namespace GyroEngine::Resources
 
     void PipelineBindings::DestroySpvModules()
     {
-        for (auto &[stage, spvModule]: m_spvModules)
+        for (auto& [stage, spvModule] : m_spvModules)
         {
             spvReflectDestroyShaderModule(&spvModule);
             spvModule = {};
@@ -287,7 +290,7 @@ namespace GyroEngine::Resources
     bool PipelineBindings::GetInputAttributes()
     {
         // Iterate through each shader stage and reflect input attributes
-        for (const auto &[stage, spvModule]: m_spvModules)
+        for (const auto& [stage, spvModule] : m_spvModules)
         {
             if (stage->GetShaderStage() != Utils::Shader::ShaderStage::Vertex)
             {
@@ -303,7 +306,7 @@ namespace GyroEngine::Resources
                 return false;
             }
 
-            std::vector<SpvReflectInterfaceVariable *> inputs(inputCount);
+            std::vector<SpvReflectInterfaceVariable*> inputs(inputCount);
             result = spvReflectEnumerateInputVariables(&spvModule, &inputCount, inputs.data());
             if (result != SPV_REFLECT_RESULT_SUCCESS)
             {
@@ -312,9 +315,10 @@ namespace GyroEngine::Resources
             }
 
             // Populate input attributes
-            for (const auto *input: inputs)
+            for (const auto* input : inputs)
             {
-                if ((input->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0) continue; // Skip built-in variables
+                if ((input->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0) continue;
+                // Skip built-in variables
 
                 VertexInput attribute;
                 attribute.name = input->name ? input->name : "UNKNOWN INPUT";
@@ -331,7 +335,7 @@ namespace GyroEngine::Resources
     bool PipelineBindings::CreateDescriptorSetLayouts()
     {
         // Iterate through each shader stage and setup the bindings
-        for (auto &[stage, spvModule]: m_spvModules)
+        for (auto& [stage, spvModule] : m_spvModules)
         {
             // Reflect shader's descriptor sets
             uint32_t setCount = 0;
@@ -344,7 +348,7 @@ namespace GyroEngine::Resources
             }
 
             // Populate vector with descriptor set information
-            std::vector<SpvReflectDescriptorSet *> sets(setCount);
+            std::vector<SpvReflectDescriptorSet*> sets(setCount);
             result = spvReflectEnumerateDescriptorSets(&spvModule, &setCount, sets.data());
 
             // Iterate through each set and create bindings
@@ -353,36 +357,13 @@ namespace GyroEngine::Resources
                 std::shared_ptr<Set> set = nullptr;
 
                 // Check if this set has already been created
-                const SpvReflectDescriptorSet *spvSet = sets[i];
+                const SpvReflectDescriptorSet* spvSet = sets[i];
                 auto it = std::find_if(m_sets.begin(), m_sets.end(),
-                                       [&](const std::shared_ptr<Set> &thisSet)
+                                       [&](const std::shared_ptr<Set>& thisSet)
                                        {
                                            return thisSet->set == spvSet->set;
                                        });
-                if (it != m_sets.end())
-                {
-                    // Append this shader's stage to all bindings of this set
-                    // This ensures that we can access the set from different shader stages (Vertex | Fragment | Compute, etc)
-                    for (auto &binding: (*it)->bindings)
-                    {
-                        if (binding.binding == spvSet->set)
-                        {
-                            switch (stage->GetShaderStage())
-                            {
-                                case Utils::Shader::ShaderStage::Vertex:
-                                    binding.layoutBinding.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
-                                    break;
-                                case Utils::Shader::ShaderStage::Fragment:
-                                    binding.layoutBinding.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
-                                    break;
-                                default:
-                                    binding.layoutBinding.stageFlags |= VK_SHADER_STAGE_ALL;
-                                    break;
-                            }
-                        }
-                    }
-                    set = *it; // Use the existing set
-                } else
+                if (it == m_sets.end())
                 {
                     // Create a new set since we couldn't find one
                     set = std::make_shared<Set>();
@@ -395,37 +376,48 @@ namespace GyroEngine::Resources
                 {
                     // Check if this binding hasn't been added already
                     auto bindingIt = std::find_if(set->bindings.begin(), set->bindings.end(),
-                                                  [&](const Binding &b)
+                                                  [&](const Binding& b)
                                                   {
                                                       return b.binding == spvSet->bindings[j]->binding;
                                                   });
                     if (bindingIt != set->bindings.end())
                     {
-                        // If it exists, we can skip adding it again
+                        // Merge stage flags
+                        VkShaderStageFlags shaderStage = 0;
+                        switch (stage->GetShaderStage())
+                        {
+                        case Utils::Shader::ShaderStage::Vertex:
+                            shaderStage = VK_SHADER_STAGE_VERTEX_BIT;
+                        case Utils::Shader::ShaderStage::Fragment:
+                            shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT;
+                        default: break;
+                        }
+
+                        bindingIt->stageFlags |= shaderStage;
                         continue;
                     }
-                    const SpvReflectDescriptorBinding *spvBinding = spvSet->bindings[j];
+                    const SpvReflectDescriptorBinding* spvBinding = spvSet->bindings[j];
                     Binding binding;
                     binding.binding = spvBinding->binding;
-                    binding.type = static_cast<VkDescriptorType>(spvBinding->descriptor_type);
+                    binding.type = ToVkDescriptorType(spvBinding->descriptor_type);
                     binding.name = spvBinding->name ? spvBinding->name : "UNKNOWN SET";
 
                     switch (stage->GetShaderStage())
                     {
-                        case Utils::Shader::ShaderStage::Vertex:
-                            binding.layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-                            break;
-                        case Utils::Shader::ShaderStage::Fragment:
-                            binding.layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-                            break;
-                        default:
-                            binding.layoutBinding.stageFlags = VK_SHADER_STAGE_ALL;
-                            break;
+                    case Utils::Shader::ShaderStage::Vertex:
+                        binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+                        break;
+                    case Utils::Shader::ShaderStage::Fragment:
+                        binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+                        break;
+                    default:
+                        binding.stageFlags = VK_SHADER_STAGE_ALL;
+                        break;
                     }
 
                     // Create layout binding
                     binding.layoutBinding.binding = spvBinding->binding;
-                    binding.layoutBinding.descriptorType = static_cast<VkDescriptorType>(spvBinding->descriptor_type);
+                    binding.layoutBinding.descriptorType = ToVkDescriptorType(spvBinding->descriptor_type);
                     binding.layoutBinding.descriptorCount = spvBinding->count;
                     binding.layoutBinding.stageFlags = binding.stageFlags;
 
@@ -446,10 +438,13 @@ namespace GyroEngine::Resources
             std::vector<VkDescriptorSetLayoutBinding> layoutBindings(set->bindings.size());
             for (size_t j = 0; j < set->bindings.size(); ++j)
             {
-                layoutBindings[j] = set->bindings[j].layoutBinding;
+                auto binding = set->bindings[j];
+                layoutBindings[binding.binding] = binding.layoutBinding;
+                Logger::Log("Added binding {} to set {} with type {} for stage {}", set->bindings[j].binding, set->set, static_cast
+                            <uint32_t>(set->bindings[j].layoutBinding.descriptorType), static_cast<uint32_t>(set->bindings[j].stageFlags));
             }
 
-            layoutInfo.pBindings = reinterpret_cast<const VkDescriptorSetLayoutBinding *>(layoutBindings.data());
+            layoutInfo.pBindings = reinterpret_cast<const VkDescriptorSetLayoutBinding*>(layoutBindings.data());
 
             if (VkResult res = vkCreateDescriptorSetLayout(m_device.GetLogicalDevice(), &layoutInfo, nullptr,
                                                            &set->layout); res != VK_SUCCESS)
@@ -464,7 +459,7 @@ namespace GyroEngine::Resources
 
     void PipelineBindings::DestroyDescriptorSetLayouts()
     {
-        for (auto &set: m_sets)
+        for (auto& set : m_sets)
         {
             if (set->layout != VK_NULL_HANDLE)
             {
@@ -480,7 +475,7 @@ namespace GyroEngine::Resources
         std::map<std::string, PushConstantBlock> pushConstantMap;
 
         // Enumerate all push constants from all shader stages
-        for (auto &[stage, spvModule]: m_spvModules)
+        for (auto& [stage, spvModule] : m_spvModules)
         {
             // Enumerate push constant blocks
             uint32_t pushConstantCount = 0;
@@ -494,27 +489,27 @@ namespace GyroEngine::Resources
             if (pushConstantCount == 0) continue;
 
             // Populate vector with push constant information
-            std::vector<SpvReflectBlockVariable *> pushConstants(pushConstantCount);
+            std::vector<SpvReflectBlockVariable*> pushConstants(pushConstantCount);
             result = spvReflectEnumeratePushConstantBlocks(&spvModule, &pushConstantCount, pushConstants.data());
 
             // Iterate through each push constant block
             for (uint32_t i = 0; i < pushConstantCount; ++i)
             {
-                const SpvReflectBlockVariable *spvPushConstant = pushConstants[i];
+                const SpvReflectBlockVariable* spvPushConstant = pushConstants[i];
                 std::string blockName = spvPushConstant->name ? spvPushConstant->name : "default";
 
                 VkShaderStageFlags stageFlag;
                 switch (stage->GetShaderStage())
                 {
-                    case Utils::Shader::ShaderStage::Vertex:
-                        stageFlag = VK_SHADER_STAGE_VERTEX_BIT;
-                        break;
-                    case Utils::Shader::ShaderStage::Fragment:
-                        stageFlag = VK_SHADER_STAGE_FRAGMENT_BIT;
-                        break;
-                    default:
-                        stageFlag = VK_SHADER_STAGE_ALL;
-                        break;
+                case Utils::Shader::ShaderStage::Vertex:
+                    stageFlag = VK_SHADER_STAGE_VERTEX_BIT;
+                    break;
+                case Utils::Shader::ShaderStage::Fragment:
+                    stageFlag = VK_SHADER_STAGE_FRAGMENT_BIT;
+                    break;
+                default:
+                    stageFlag = VK_SHADER_STAGE_ALL;
+                    break;
                 }
 
                 // Check if this block already exists
@@ -522,7 +517,8 @@ namespace GyroEngine::Resources
                 {
                     // If exists, update the stage flags
                     pushConstantMap[blockName].stageFlags |= stageFlag;
-                } else
+                }
+                else
                 {
                     // Create new block
                     PushConstantBlock pushConstantBlock;
@@ -534,7 +530,7 @@ namespace GyroEngine::Resources
                     // Add members
                     for (uint32_t j = 0; j < spvPushConstant->member_count; ++j)
                     {
-                        const SpvReflectBlockVariable *member = &spvPushConstant->members[j];
+                        const SpvReflectBlockVariable* member = &spvPushConstant->members[j];
                         PushConstantMember pushConstantMember;
                         pushConstantMember.name = member->name ? member->name : "";
                         pushConstantMember.offset = member->offset;
@@ -550,7 +546,7 @@ namespace GyroEngine::Resources
 
         // Convert map to vector
         m_pushConstants.clear();
-        for (const auto &[name, block]: pushConstantMap)
+        for (const auto& [name, block] : pushConstantMap)
         {
             m_pushConstants.push_back(block);
         }
@@ -561,9 +557,9 @@ namespace GyroEngine::Resources
     void PipelineBindings::DestroyPushConstantRanges()
     {
         // Enumerate through all push constants and free data from the members
-        for (auto &pushConstant: m_pushConstants)
+        for (auto& pushConstant : m_pushConstants)
         {
-            for (auto &member: pushConstant.members)
+            for (auto& member : pushConstant.members)
             {
                 if (member.data)
                 {
@@ -583,9 +579,9 @@ namespace GyroEngine::Resources
             std::unordered_map<VkDescriptorType, uint32_t> poolSizes;
 
             // Enumerate through all bindings to include all descriptor types
-            for (const auto &set: m_sets)
+            for (const auto& set : m_sets)
             {
-                for (const auto &binding: set->bindings)
+                for (const auto& binding : set->bindings)
                 {
                     if (binding.type != VK_DESCRIPTOR_TYPE_MAX_ENUM)
                     {
@@ -604,7 +600,7 @@ namespace GyroEngine::Resources
 
             // Convert the unordered_map to a vector of VkDescriptorPoolSize
             std::vector<VkDescriptorPoolSize> poolSizesVec;
-            for (const auto &[type, count]: poolSizes)
+            for (const auto& [type, count] : poolSizes)
             {
                 VkDescriptorPoolSize poolSize = {};
                 poolSize.type = type;
@@ -634,7 +630,7 @@ namespace GyroEngine::Resources
     void PipelineBindings::DestroyDescriptorPool()
     {
         // Enumerate and destroy all descriptor pools
-        for (auto &pool: m_descriptorPools)
+        for (auto& pool : m_descriptorPools)
         {
             if (pool != VK_NULL_HANDLE)
             {
@@ -647,7 +643,7 @@ namespace GyroEngine::Resources
     bool PipelineBindings::AllocateDescriptorSets() const
     {
         // Enumerate through all sets and allocate descriptor sets
-        for (auto &set: m_sets)
+        for (auto& set : m_sets)
         {
             // Create a set for each frame in flight
             for (uint32_t i = 0; i < m_device.GetMaxFramesInFlight(); ++i)
@@ -682,9 +678,9 @@ namespace GyroEngine::Resources
     void PipelineBindings::DestroyDescriptorSets() const
     {
         // Enumerate through all sets and destroy their descriptor sets
-        for (auto &set: m_sets)
+        for (auto& set : m_sets)
         {
-            for (auto &[descriptorSet, descriptorPool]: set->descriptorSets)
+            for (auto& [descriptorSet, descriptorPool] : set->descriptorSets)
             {
                 if (descriptorSet != VK_NULL_HANDLE)
                 {

@@ -4,6 +4,8 @@
 
 #include "pipeline.h"
 
+#include <map>
+
 #include "context/rendering_device.h"
 #include "rendering/renderer.h"
 
@@ -80,12 +82,18 @@ namespace GyroEngine::Resources
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
+
         m_descriptorSetLayouts.clear();
-        const auto descriptorLayouts = m_pipelineBindings->GetSets();
-        m_descriptorSetLayouts.reserve(descriptorLayouts.size());
-        for (const auto &descriptorLayout: descriptorLayouts)
-        {
-            m_descriptorSetLayouts.push_back(descriptorLayout->layout);
+        std::map<uint32_t, VkDescriptorSetLayout> descriptorSetLayouts;
+
+        // Fill the map
+        for (const auto set : m_pipelineBindings->GetSets()) {
+            descriptorSetLayouts[set->set] = set->layout;
+        }
+
+        // Fill the vector in sorted order of set index
+        for (const auto& [setIndex, layout] : descriptorSetLayouts) {
+            m_descriptorSetLayouts.push_back(layout);
         }
 
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(m_descriptorSetLayouts.size());
