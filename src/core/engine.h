@@ -63,10 +63,10 @@ namespace GyroEngine
         bool CreateRenderingDevice();
         void DestroyRenderingDevice();
 
-        bool CreateWindow();
+        bool BuildWindow();
         void DestroyWindow();
 
         void StartFactories();
-        void StartServices();
+        void StartServices() const;
     };
 }

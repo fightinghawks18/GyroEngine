@@ -6,6 +6,15 @@
 
 namespace GyroEngine::Platform
 {
+    void Keyboard::Init()
+    {
+        // Populate keyboard map
+        for (auto k = static_cast<uint32_t>(Key::Unknown); k < static_cast<uint32_t>(Key::MediaPlayPause); k++)
+        {
+            m_keyMap[static_cast<Key>(k)] = {};
+        }
+    }
+
     void Keyboard::Update(const SDL_Event& event)
     {
         switch (event.type)
@@ -16,15 +25,6 @@ namespace GyroEngine::Platform
                 UpdateKey(event.key);
             }
         default: break;
-        }
-    }
-
-    Keyboard::Keyboard()
-    {
-        // Populate keyboard map
-        for (auto k = static_cast<uint32_t>(Key::Unknown); k < static_cast<uint32_t>(Key::MediaPlayPause); k++)
-        {
-            m_keyMap[static_cast<Key>(k)] = {};
         }
     }
 

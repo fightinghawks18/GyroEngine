@@ -67,10 +67,10 @@ namespace GyroEngine::Platform
     {
         friend class ISingleton;
     public:
+        void Init();
         void Update(const SDL_Event& event);
         static bool IsKeyDown(const Key key) { return Get().m_keyMap[key].pressed; }
     private:
-        Keyboard();
         void UpdateKey(const SDL_KeyboardEvent& event);
 
         std::unordered_map<Key, KeyData> m_keyMap;

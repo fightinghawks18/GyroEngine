@@ -23,7 +23,7 @@ namespace GyroEngine
             Logger::LogError("Failed to initialize SDL: " + std::string(SDL_GetError()));
             return false;
         }
-        if (!CreateWindow())
+        if (!BuildWindow())
         {
             Logger::LogError("Failed to create window.");
             return false;
@@ -39,17 +39,14 @@ namespace GyroEngine
     {
         while (m_window->IsWindowAlive())
         {
-            if (m_closing)
+            if (m_window->HasRequestedQuit())
             {
                 break;
             }
+
             SDL_Event event;
             while (SDL_PollEvent(&event))
             {
-                if (m_window->HasRequestedQuit())
-                {
-                    m_closing = true;
-                }
                 m_window->Update(event);
                 // Pass the event to the input system
                 Platform::Keyboard::Get().Update(event);
@@ -86,7 +83,7 @@ namespace GyroEngine
         }
     }
 
-    bool Engine::CreateWindow()
+    bool Engine::BuildWindow()
     {
         m_window = std::make_shared<Platform::Window>();
         if (!m_window->Init())
@@ -115,12 +112,14 @@ namespace GyroEngine
         }
     }
 
-    void Engine::StartServices()
+    void Engine::StartServices() const
     {
         if (!m_device)
         {
             Logger::LogError("Cannot start services without a valid rendering device");
             return;
         }
+
+        Platform::Keyboard::Get().Init();
     }
 }
