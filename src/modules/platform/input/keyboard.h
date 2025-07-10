@@ -12,7 +12,7 @@
 #include "inpututils.h"
 #include "singleton.h"
 
-namespace GyroEngine::Platform
+namespace GyroEngine::Input
 {
     enum class Key : uint32_t
     {
@@ -59,8 +59,9 @@ namespace GyroEngine::Platform
 
     struct KeyData
     {
-        uint32_t timestamp;
+        uint32_t timestamp = 0;
         bool pressed = false;
+        bool justPressed = false;
     };
 
     class Keyboard : public Utils::ISingleton<Keyboard>
@@ -69,7 +70,13 @@ namespace GyroEngine::Platform
     public:
         void Init();
         void Update(const SDL_Event& event);
+        void ResetFrame();
+
         static bool IsKeyDown(const Key key) { return Get().m_keyMap[key].pressed; }
+        static bool WasKeyJustPressed(const Key key) {
+            const auto& keyData = Get().m_keyMap[key];
+            return keyData.justPressed;
+        }
     private:
         void UpdateKey(const SDL_KeyboardEvent& event);
 

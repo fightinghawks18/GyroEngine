@@ -47,7 +47,7 @@ public:
 
     ~Renderer();
 
-    bool Init(Platform::Window* window);
+    bool Init(Window* window);
     void Cleanup();
 
     bool Resize();
@@ -86,7 +86,7 @@ public:
     }
 private:
     Device::RenderingDevice& m_device;
-    Platform::Window* m_window = nullptr;
+    Window* m_window = nullptr;
 
     VkRenderingInfoKHR m_renderingInfo = {};
 

@@ -10,7 +10,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_scancode.h>
 
-namespace GyroEngine::Platform
+namespace GyroEngine::Input
 {
     using InputValue = std::variant<bool, int, float, double, glm::vec2>;
 

@@ -34,7 +34,7 @@ namespace GyroEngine
             return m_device;
         }
 
-        [[nodiscard]] std::shared_ptr<Platform::Window> GetWindow() const
+        [[nodiscard]] std::shared_ptr<Window> GetWindow() const
         {
             return m_window;
         }
@@ -47,13 +47,13 @@ namespace GyroEngine
         {
             return Get().GetDeviceSmart();
         }
-        static std::shared_ptr<Platform::Window> SGetWindow()
+        static std::shared_ptr<Window> SGetWindow()
         {
             return Get().GetWindow();
         }
     private:
         std::shared_ptr<Device::RenderingDevice> m_device;
-        std::shared_ptr<Platform::Window> m_window;
+        std::shared_ptr<Window> m_window;
 
         std::function<void()> m_destroyFunction;
         std::function<void()> m_updateFunction;

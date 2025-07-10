@@ -5,7 +5,9 @@
 #include "engine.h"
 
 #include "factories/mesh_factory.h"
+
 #include "input/keyboard.h"
+#include "input/mouse.h"
 
 namespace GyroEngine
 {
@@ -37,23 +39,37 @@ namespace GyroEngine
 
     void Engine::Run()
     {
+        // Keep engine alive as long as the window is alive
+        // ^ This will the first way the engine can exit
         while (m_window->IsWindowAlive())
         {
-            if (m_window->HasRequestedQuit())
+            // If the window needs to quit, or we want the engine to close, exit the loop prematurely
+            if (m_window->HasRequestedQuit() || m_closing)
             {
                 break;
             }
 
+            // Reset input
+            Input::Mouse::Get().ResetDelta();
+            Input::Keyboard::Get().ResetFrame();
+
+            // Start updating SDL objects
             SDL_Event event;
             while (SDL_PollEvent(&event))
             {
+                // Handle window events
                 m_window->Update(event);
+
                 // Pass the event to the input system
-                Platform::Keyboard::Get().Update(event);
+                Input::Keyboard::Get().Update(event);
+                Input::Mouse::Get().Update(event);
             }
 
+            // Run the update function if set
             m_updateFunction();
         }
+
+        // Destroy the engine resources after the loop ends
         Destroy();
     }
 
@@ -85,7 +101,7 @@ namespace GyroEngine
 
     bool Engine::BuildWindow()
     {
-        m_window = std::make_shared<Platform::Window>();
+        m_window = std::make_shared<Window>();
         if (!m_window->Init())
         {
             std::cerr << "Failed to create window." << std::endl;
@@ -120,6 +136,7 @@ namespace GyroEngine
             return;
         }
 
-        Platform::Keyboard::Get().Init();
+        Input::Keyboard::Get().Init();
+        Input::Mouse::Get().Init();
     }
 }

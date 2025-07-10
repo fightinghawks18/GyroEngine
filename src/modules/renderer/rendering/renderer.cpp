@@ -13,7 +13,7 @@ namespace GyroEngine::Rendering
     Cleanup();
 }
 
-bool Renderer::Init(Platform::Window* window)
+bool Renderer::Init(Window* window)
 {
     m_window = window;
     m_surface = m_device.CreateSurfaceFromWindow(m_window);

@@ -24,9 +24,10 @@
 
 #include "debug/logger.h"
 #include "input/keyboard.h"
+#include "input/mouse.h"
 
 using namespace GyroEngine;
-using namespace Platform;
+using namespace Input;
 
 int main()
 {
@@ -162,6 +163,8 @@ int main()
         return -1;
     }
 
+    Mouse::SetMouseSensitivity(0.6f);
+
     glm::vec3 cameraPosition = {0.0f, 0.0f, -6.0f};
 
     Resources::CameraBuffer camera = {};
@@ -172,9 +175,6 @@ int main()
     camera.aspect = 1.0f;
     camera.nearPlane = 0.1f;
     camera.farPlane = 10.0f;
-
-    glm::vec2 mousePos = glm::vec2(0);
-    glm::vec2 mousePos2 = mousePos;
 
     float yaw = 0.0f;
     float pitch = 0.0f;
@@ -194,10 +194,21 @@ int main()
 
     engine.SetUpdateFunction([&]()
     {
-        if (Keyboard::IsKeyDown(Key::Escape))
+        if (Keyboard::WasKeyJustPressed(Key::Escape))
         {
             engine.Close();
         }
+
+        if (Keyboard::WasKeyJustPressed(Key::Tab))
+        {
+            Mouse::SetMouseMode(Mouse::IsRelative() ? MouseMode::Free : MouseMode::Locked);
+        }
+
+        glm::vec2 delta = Mouse::GetDelta();
+
+        yaw -= delta.x * Mouse::GetSensitivity();
+        pitch -= delta.y * Mouse::GetSensitivity();
+
         if (renderer->RecordFrame())
         {
             scenePass->AddGeometry(cube);
@@ -213,8 +224,8 @@ int main()
             glm::vec3 forward = glm::normalize(cameraDirection);
             glm::vec3 right = glm::normalize(glm::cross(forward, camera.up));
 
-            float moveSpeed = 0.005f;
-            glm::vec3 movement = glm::vec3(0.0f);
+            float moveSpeed = Keyboard::IsKeyDown(Key::LeftShift) ? 0.1f : 0.05f;
+            auto movement = glm::vec3(0.0f);
 
             if (Keyboard::IsKeyDown(Key::W)) movement += forward * moveSpeed;
             if (Keyboard::IsKeyDown(Key::S)) movement -= forward * moveSpeed;

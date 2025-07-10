@@ -10,7 +10,7 @@
 #include <SDL3/SDL_vulkan.h>
 
 
-namespace GyroEngine::Platform
+namespace GyroEngine
 {
     class Window {
     public:
@@ -50,7 +50,7 @@ namespace GyroEngine::Platform
             return static_cast<uint32_t>(height);
         }
     private:
-        SDL_Window* m_window;
+        SDL_Window* m_window{};
         bool m_requestedQuit = false;
     };
 }

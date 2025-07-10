@@ -77,7 +77,7 @@ VkFormat RenderingDevice::QueryForSupportedDepthFormat(VkFormat format)
     return m_supportedDepthFormats[0];
 }
 
-VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Platform::Window *window) const
+VkSurfaceKHR RenderingDevice::CreateSurfaceFromWindow(const Window *window) const
 {
     SDL_Window* sdlWindow = window->GetWindowHandle();
     VkSurfaceKHR surface;

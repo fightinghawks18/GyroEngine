@@ -6,6 +6,8 @@ add_library(PlatformModule STATIC
         input/keyboard.cpp
         input/keyboard.h
         input/inpututils.h
+        input/mouse.cpp
+        input/mouse.h
 )
 
 set_target_properties(PlatformModule

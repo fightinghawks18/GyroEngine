@@ -121,7 +121,7 @@ namespace GyroEngine::Device
 
         VkFormat QueryForSupportedDepthFormat(VkFormat format);
 
-        VkSurfaceKHR CreateSurfaceFromWindow(const Platform::Window *window) const;
+        VkSurfaceKHR CreateSurfaceFromWindow(const Window *window) const;
 
         DeviceQueue GetPresentQueueFromSurface(VkSurfaceKHR surface) const;
 

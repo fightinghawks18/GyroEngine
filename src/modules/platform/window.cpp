@@ -5,10 +5,9 @@
 #include "window.h"
 
 
-namespace GyroEngine::Platform
+namespace GyroEngine
 {
-    Window::Window()
-= default;
+    Window::Window() = default;
 
     Window::~Window()
     {
