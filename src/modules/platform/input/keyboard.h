@@ -59,7 +59,7 @@ namespace GyroEngine::Input
 
     struct KeyData
     {
-        uint32_t timestamp = 0;
+        uint64_t timestamp = 0;
         bool pressed = false;
         bool justPressed = false;
     };

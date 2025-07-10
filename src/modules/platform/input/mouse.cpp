@@ -115,7 +115,7 @@ namespace GyroEngine::Input
         SDL_Window* window = SDL_GetMouseFocus();
         if (window)
         {
-            SDL_WarpMouseInWindow(window, static_cast<int>(x), static_cast<int>(y));
+            SDL_WarpMouseInWindow(window, x, y);
             m_position = glm::vec2(x, y); // Update the position
             m_delta = glm::vec2(0.0f, 0.0f); // Reset delta since we moved the mouse
         }
@@ -128,8 +128,8 @@ namespace GyroEngine::Input
         {
             int width, height;
             SDL_GetWindowSize(window, &width, &height);
-            int centerX = width / 2;
-            int centerY = height / 2;
+            const float centerX = static_cast<float>(width / 2);
+            const float centerY = static_cast<float>(height / 2);
             Move(centerX, centerY);
         }
     }

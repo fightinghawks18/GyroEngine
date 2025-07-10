@@ -37,7 +37,7 @@ namespace GyroEngine::Input
 
     struct ButtonData
     {
-        uint32_t timestamp = 0;
+        uint64_t timestamp = 0;
         bool pressed = false;
     };
 
