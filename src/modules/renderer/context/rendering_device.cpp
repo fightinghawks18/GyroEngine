@@ -17,6 +17,17 @@ RenderingDevice::~RenderingDevice()
 
 bool RenderingDevice::Init()
 {
+    // Check for vulkan support
+    bool vulkanSupported = SDL_Vulkan_LoadLibrary(nullptr);
+    if (!vulkanSupported)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+            "VULKAN SUPPORT MISSING",
+            "This system's hardware does not support Vulkan. Please ensure you have the latest drivers installed.",
+            nullptr);
+        throw std::runtime_error("Vulkan support is missing.");
+    }
+
     if (!CreateInstance()) return false;
 #ifdef DEBUG
     if (!SetupDebugMessenger()) return false;
