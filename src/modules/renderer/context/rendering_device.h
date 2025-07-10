@@ -7,6 +7,9 @@
 #include <any>
 #include <memory>
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+
 #include "../../platform/window.h"
 #include "tasks/maid.h"
 
