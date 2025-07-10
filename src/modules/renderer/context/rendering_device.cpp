@@ -18,8 +18,7 @@ RenderingDevice::~RenderingDevice()
 bool RenderingDevice::Init()
 {
     // Check for vulkan support
-    bool vulkanSupported = SDL_Vulkan_LoadLibrary(nullptr);
-    if (!vulkanSupported)
+    if (SDL_Vulkan_LoadLibrary(nullptr))
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
             "VULKAN SUPPORT MISSING",
