@@ -59,10 +59,15 @@ namespace GyroEngine::Resources
 
     void Pipeline::Bind(const Rendering::FrameContext &frameContext) const
     {
-        if (m_pipeline != VK_NULL_HANDLE)
-        {
-            vkCmdBindPipeline(frameContext.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-        }
+        if (m_pipeline == VK_NULL_HANDLE || m_pipelineLayout == VK_NULL_HANDLE)
+            return;
+
+        vkCmdBindPipeline(frameContext.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+        if (!m_pipelineBindings)
+            return;
+
+        m_pipelineBindings->Bind(frameContext, m_pipelineLayout);
     }
 
     void Pipeline::DrawFullscreenQuad(const Rendering::FrameContext &frameContext) const

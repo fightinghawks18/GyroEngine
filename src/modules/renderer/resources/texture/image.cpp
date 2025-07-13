@@ -4,7 +4,7 @@
 
 #include "image.h"
 
-#include "buffer.h"
+#include "../buffer/buffer.h"
 #include "context/rendering_device.h"
 #include "utilities/renderer.h"
 

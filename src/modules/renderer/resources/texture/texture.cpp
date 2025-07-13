@@ -4,7 +4,7 @@
 
 #include "texture.h"
 
-#include "buffer.h"
+#include "../buffer/buffer.h"
 #include "context/rendering_device.h"
 
 namespace GyroEngine::Resources

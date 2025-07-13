@@ -9,8 +9,8 @@
 #include "../utilities/renderer.h"
 #include "viewport.h"
 #include "../../platform/window.h"
-#include "resources/image.h"
-#include "resources/sampler.h"
+#include "../resources/texture/image.h"
+#include "../resources/texture/sampler.h"
 
 namespace GyroEngine::Device
 {
@@ -55,8 +55,7 @@ public:
 
     bool RecordFrame();
     void BindViewport(const Viewport& viewport);
-    void BindRenderingInfo(const VkRenderingInfoKHR &renderingInfo);
-    void StartRender() const;
+    void StartRender(const VkRenderingInfoKHR &renderingInfo);
     void EndRender() const;
     void SubmitFrame();
 

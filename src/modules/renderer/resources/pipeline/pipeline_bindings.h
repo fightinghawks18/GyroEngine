@@ -11,9 +11,9 @@
 
 #include <spirv-reflect/spirv.h>
 
-#include "buffer.h"
-#include "image.h"
-#include "sampler.h"
+#include "../buffer/buffer.h"
+#include "../texture/image.h"
+#include "../texture/sampler.h"
 #include "shader.h"
 
 namespace GyroEngine::Rendering

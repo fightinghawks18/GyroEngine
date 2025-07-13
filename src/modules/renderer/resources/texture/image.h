@@ -7,7 +7,7 @@
 #include <memory>
 #include <volk.h>
 
-#include "../implementation/vma_implementation.h"
+#include "../../implementation/vma_implementation.h"
 #include "utilities/device.h"
 
 #include "utilities/image.h"

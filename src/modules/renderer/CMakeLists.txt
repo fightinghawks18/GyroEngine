@@ -19,45 +19,48 @@ add_library(RendererModule STATIC
         utilities/renderer.h
         utilities/device.h
         rendering/viewport.h
-        resources/image.cpp
-        resources/image.h
+        resources/texture/image.cpp
+        resources/texture/image.h
         implementation/vma_implementation.cpp
         implementation/vma_implementation.h
         utilities/image.h
-        resources/buffer.cpp
-        resources/buffer.h
-        resources/sampler.cpp
-        resources/sampler.h
-        resources/pipeline.cpp
-        resources/pipeline.h
+        resources/buffer/buffer.cpp
+        resources/buffer/buffer.h
+        resources/texture/sampler.cpp
+        resources/texture/sampler.h
+        resources/pipeline/pipeline.cpp
+        resources/pipeline/pipeline.h
         utilities/pipeline.h
-        resources/shader.cpp
-        resources/shader.h
+        resources/pipeline/shader.cpp
+        resources/pipeline/shader.h
         utilities/shader.h
-        resources/push_constant.h
-        rendering/rendergraph/render_graph.cpp
-        rendering/rendergraph/render_graph.h
-        rendering/rendergraph/render_pass.h
-        rendering/rendergraph/passes/clear_pass.h
-        rendering/rendergraph/passes/scene_pass.h
-        resources/mesh.cpp
-        resources/mesh.h
+        resources/pipeline/push_constant.h
+        resources/object/mesh.cpp
+        resources/object/mesh.h
         factories/mesh_factory.cpp
         factories/mesh_factory.h
-        rendering/commands/command.h
         utilities/mesh.h
-        resources/material.cpp
-        resources/material.h
+        resources/object/material.cpp
+        resources/object/material.h
         implementation/stb_implementation.h
         implementation/stb_implementation.cpp
-        resources/texture.cpp
-        resources/texture.h
-        resources/light_data.h
-        resources/pipeline_bindings.cpp
-        resources/pipeline_bindings.h
-        resources/buffer_types.h
+        resources/texture/texture.cpp
+        resources/texture/texture.h
+        resources/buffer/light_data.h
+        resources/pipeline/pipeline_bindings.cpp
+        resources/pipeline/pipeline_bindings.h
+        resources/buffer/buffer_types.h
         implementation/glm_implementation.h
         implementation/glm_implementation.cpp
+        commands/command.h
+        commands/mesh_command.h
+        commands/material_command.h
+        commands/clear_color_command.h
+        commands/clear_depth_command.h
+        commands/sky_command.h
+        commands/particle_command.h
+        resources/command_batch.cpp
+        resources/command_batch.h
 )
 
 set_target_properties(RendererModule

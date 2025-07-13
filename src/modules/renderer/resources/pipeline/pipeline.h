@@ -74,4 +74,6 @@ namespace GyroEngine::Resources
         bool BuildPipelineLayout();
         bool BuildPipeline();
     };
+
+    using PipelineHandle = std::shared_ptr<Pipeline>;
 }

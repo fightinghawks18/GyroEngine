@@ -5,7 +5,7 @@
 #pragma once
 
 #include "types.h"
-#include "resources/mesh.h"
+#include "../resources/object/mesh.h"
 
 namespace GyroEngine::Factories
 {

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "buffer.h"
-#include "pipeline.h"
+#include "../buffer/buffer.h"
+#include "../pipeline/pipeline.h"
 #include "types.h"
 
 namespace GyroEngine::Device

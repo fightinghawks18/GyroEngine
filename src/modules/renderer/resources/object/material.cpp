@@ -2,11 +2,8 @@
 // Created by lepag on 6/19/2025.
 //
 
-#pragma once
+#include "material.h"
 
 namespace GyroEngine::Resources
 {
-    class Material
-    {
-    };
 }
